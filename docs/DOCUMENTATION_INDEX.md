@@ -10,28 +10,41 @@ Welcome to the Mini Coding Challenges Flutter project! This project demonstrates
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
-| **[CI/CD Implementation Summary](CI_CD_IMPLEMENTATION_SUMMARY.md)** | Complete overview of what's implemented | All team members | 10 minutes |
-| **[CI/CD Pipeline Documentation](CI_CD_PIPELINE_DOCUMENTATION.md)** | Detailed usage and configuration guide | DevOps, Senior Developers | 30 minutes |
-| **[CI/CD Quick Setup Guide](CI_CD_QUICK_SETUP_GUIDE.md)** | Step-by-step implementation | New teams, DevOps | 15 minutes |
-| **[CI/CD Performance Optimization Guide](CI_CD_PERFORMANCE_OPTIMIZATION_GUIDE.md)** | Advanced optimization techniques | Senior DevOps, Architects | 25 minutes |
+| **[CI/CD Documentation Hub](ci-cd/README.md)** | Complete CI/CD guide and resources | All team members | 15 minutes |
+| **[Pipeline Documentation](ci-cd/CI_CD_PIPELINE_DOCUMENTATION.md)** | Complete CI/CD setup and configuration | DevOps, Senior Developers | 45 minutes |
+| **[Implementation Summary](ci-cd/CI_CD_IMPLEMENTATION_SUMMARY.md)** | Overview of implemented features | All team members | 15 minutes |
+| **[Quick Setup Guide](ci-cd/CI_CD_QUICK_SETUP_GUIDE.md)** | Fast-track CI/CD setup | DevOps, Project leads | 20 minutes |
+| **[Performance Optimization Guide](ci-cd/CI_CD_PERFORMANCE_OPTIMIZATION_GUIDE.md)** | Advanced optimization techniques | Senior DevOps, Architects | 30 minutes |
 
-### 🧪 Testing & Quality
-
-| Document | Purpose | Audience | Time to Read |
-|----------|---------|----------|--------------|
-| **[Testing Strategy Guide](TESTING_STRATEGY_GUIDE.md)** | Comprehensive testing methodology | All developers | 20 minutes |
-| **[Flutter Analyze Complete Guide](lib/docs/linting/FLUTTER_ANALYZE_COMPLETE_GUIDE.md)** | Complete linting documentation | All developers | 25 minutes |
-| **[Linting Implementation Summary](lib/docs/linting/LINTING_IMPLEMENTATION_SUMMARY.md)** | Google Flutter Team standards | Code reviewers | 10 minutes |
-| **[Linting Fixes Summary](lib/docs/linting/LINTING_FIXES_SUMMARY.md)** | Issues resolved during implementation | Team leads | 5 minutes |
-
-### 🔐 Android Keystore & Signing
+### 🏆 Code Quality & Standards
 
 | Document | Purpose | Audience | Time to Read |
 |----------|---------|----------|--------------|
-| **[Complete Keystore Guide](setup/ANDROID_KEYSTORE_COMPLETE_GUIDE.md)** | Comprehensive keystore workflow | All developers | 30 minutes |
-| **[Keystore Creation Guide](setup/ANDROID_KEYSTORE_GUIDE.md)** | Basic keystore concepts | Junior developers | 15 minutes |
-| **[Signing Setup Guide](setup/ANDROID_SIGNING_SETUP.md)** | Step-by-step signing setup | DevOps, Build engineers | 20 minutes |
-| **[Signing Success Verification](setup/ANDROID_SIGNING_SUCCESS.md)** | Verification procedures | QA, Release managers | 10 minutes |
+| **[Code Quality Hub](code-quality/README.md)** | Complete code quality guide | All developers | 15 minutes |
+| **[Flutter Analyze Complete Guide](code-quality/FLUTTER_ANALYZE_COMPLETE_GUIDE.md)** | Comprehensive linting and analysis | All developers | 30 minutes |
+| **[Dart Format Complete Guide](code-quality/DART_FORMAT_COMPLETE_GUIDE.md)** | Code formatting standards | All developers | 20 minutes |
+| **[Linting Implementation Summary](code-quality/LINTING_IMPLEMENTATION_SUMMARY.md)** | Overview of implemented linting rules | Team leads, Code reviewers | 15 minutes |
+| **[Linting Fixes Summary](code-quality/LINTING_FIXES_SUMMARY.md)** | Record of issues resolved | Team leads | 10 minutes |
+
+### 🚀 Deployment & Release Management
+
+| Document | Purpose | Audience | Time to Read |
+|----------|---------|----------|--------------|
+| **[Deployment Hub](deployment/README.md)** | Complete deployment guide | DevOps, Release managers | 20 minutes |
+| **[Fastlane Complete Documentation](deployment/FASTLANE_COMPLETE_DOCUMENTATION.md)** | Comprehensive Fastlane setup | DevOps, Release managers | 45 minutes |
+| **[Integration Status](deployment/FASTLANE_INTEGRATION_STATUS.md)** | Current implementation status | Team leads, Project managers | 15 minutes |
+| **[Integration Complete Summary](deployment/FASTLANE_INTEGRATION_COMPLETE_SUMMARY.md)** | Final implementation summary | All stakeholders | 20 minutes |
+| **[Integration Verification](deployment/FASTLANE_INTEGRATION_VERIFICATION.md)** | Testing and verification procedures | QA, DevOps | 25 minutes |
+
+### 🤖 Android Development
+
+| Document | Purpose | Audience | Time to Read |
+|----------|---------|----------|--------------|
+| **[Android Documentation Hub](android/README.md)** | Complete Android development guide | All developers | 10 minutes |
+| **[Complete Keystore Guide](android/ANDROID_KEYSTORE_COMPLETE_GUIDE.md)** | Comprehensive keystore workflow | All developers | 30 minutes |
+| **[Keystore Creation Guide](android/ANDROID_KEYSTORE_GUIDE.md)** | Basic keystore concepts | Junior developers | 15 minutes |
+| **[Signing Setup Guide](android/ANDROID_SIGNING_SETUP.md)** | Step-by-step signing setup | DevOps, Build engineers | 20 minutes |
+| **[Signing Success Verification](android/ANDROID_SIGNING_SUCCESS.md)** | Verification procedures | QA, Release managers | 10 minutes |
 
 ### 🛠️ Interactive Scripts & Tools
 
