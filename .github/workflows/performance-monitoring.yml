@@ -129,7 +129,7 @@ jobs:
           echo "**Incremental build improvement**: ${improvement_ratio}% faster than cold build" >> build_performance.md
       
       - name: 📤 Upload Build Performance Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-performance-report
           path: |
@@ -245,7 +245,7 @@ jobs:
           fi
       
       - name: 📤 Upload Size Analysis Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: size-analysis-report
           path: |
@@ -362,7 +362,7 @@ jobs:
           fi
       
       - name: 📤 Upload Memory Analysis Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: memory-analysis-report
           path: memory_analysis.md
@@ -379,7 +379,7 @@ jobs:
     
     steps:
       - name: 📥 Download All Reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       
       - name: 📊 Generate Combined Dashboard
         run: |
@@ -424,7 +424,7 @@ jobs:
           echo "</footer></body></html>" >> performance_dashboard.html
       
       - name: 📤 Upload Performance Dashboard
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-dashboard
           path: performance_dashboard.html

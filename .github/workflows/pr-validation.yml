@@ -341,7 +341,7 @@ jobs:
           echo "*Automated validation by Mini Coding Challenges CI/CD*" >> pr_summary.md
       
       - name: 💬 Comment PR
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
