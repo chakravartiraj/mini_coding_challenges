@@ -1,0 +1,227 @@
+# Android Fastfile
+# This file contains the fastlane.tools configuration for Android deployments
+# Use this file to define all available lanes for Android
+
+default_platform(:android)
+
+platform :android do
+  # =============================================================================
+  # ANDROID SETUP AND UTILITIES
+  # =============================================================================
+  
+  desc "Setup Android environment and dependencies"
+  lane :setup do
+    puts "🔧 Setting up Android environment..."
+    
+    # Ensure Flutter dependencies are installed
+    sh("cd .. && flutter pub get")
+    
+    # Clean previous builds
+    sh("cd .. && flutter clean")
+    
+    puts "✅ Android environment setup complete"
+  end
+  
+  desc "Run Android tests"
+  lane :test do
+    puts "🧪 Running Android tests..."
+    
+    # Run Flutter tests
+    sh("cd .. && flutter test")
+    
+    # Run Android unit tests
+    gradle(task: "test")
+    
+    puts "✅ Android tests completed"
+  end
+  
+  desc "Build Android APK"
+  lane :build_apk do |options|
+    environment = options[:environment] || "debug"
+    
+    puts "🔨 Building Android APK for #{environment}..."
+    
+    setup
+    
+    if environment == "release"
+      sh("cd .. && flutter build apk --release")
+    else
+      sh("cd .. && flutter build apk --debug")
+    end
+    
+    puts "✅ Android APK build completed"
+  end
+  
+  desc "Build Android App Bundle"
+  lane :build_bundle do |options|
+    environment = options[:environment] || "debug"
+    
+    puts "📦 Building Android App Bundle for #{environment}..."
+    
+    setup
+    
+    if environment == "release"
+      sh("cd .. && flutter build appbundle --release")
+    else
+      sh("cd .. && flutter build appbundle --debug")
+    end
+    
+    puts "✅ Android App Bundle build completed"
+  end
+  
+  # =============================================================================
+  # DEPLOYMENT LANES
+  # =============================================================================
+  
+  desc "Deploy to internal testing"
+  lane :deploy_internal do |options|
+    puts "🚀 Deploying to Google Play Internal Testing..."
+    
+    build_bundle(environment: "release")
+    
+    upload_to_play_store(
+      track: 'internal',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    puts "✅ Deployed to Google Play Internal Testing"
+  end
+  
+  desc "Deploy to alpha testing"
+  lane :deploy_alpha do |options|
+    puts "🚀 Deploying to Google Play Alpha Testing..."
+    
+    build_bundle(environment: "release")
+    
+    upload_to_play_store(
+      track: 'alpha',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    puts "✅ Deployed to Google Play Alpha Testing"
+  end
+  
+  desc "Deploy to beta testing"
+  lane :deploy_beta do |options|
+    puts "🚀 Deploying to Google Play Beta Testing..."
+    
+    build_bundle(environment: "release")
+    
+    upload_to_play_store(
+      track: 'beta',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    puts "✅ Deployed to Google Play Beta Testing"
+  end
+  
+  desc "Deploy to production"
+  lane :deploy_production do |options|
+    puts "🚀 Deploying to Google Play Store Production..."
+    
+    build_bundle(environment: "release")
+    
+    upload_to_play_store(
+      track: 'production',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    puts "✅ Deployed to Google Play Store Production"
+  end
+  
+  desc "Deploy to Firebase App Distribution"
+  lane :deploy_firebase do |options|
+    puts "🔥 Deploying to Firebase App Distribution..."
+    
+    build_apk(environment: "release")
+    
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_ANDROID"],
+      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      groups: "testers",
+      release_notes: "Latest build from #{git_branch}"
+    )
+    
+    puts "✅ Deployed to Firebase App Distribution"
+  end
+  
+  # =============================================================================
+  # UTILITY LANES
+  # =============================================================================
+  
+  desc "Validate build configuration"
+  lane :validate do
+    puts "🔍 Validating Android build configuration..."
+    
+    # Check if key.properties exists
+    unless File.exist?("../key.properties")
+      UI.error("❌ key.properties file not found!")
+      UI.error("Create android/key.properties with your keystore configuration")
+      raise "Missing key.properties file"
+    end
+    
+    # Check if keystore file exists
+    properties = File.read("../key.properties")
+    if properties.include?("storeFile=")
+      store_file = properties.match(/storeFile=(.+)/)[1].strip
+      
+      # Handle both absolute and relative paths
+      if store_file.start_with?("/")
+        keystore_path = store_file
+      else
+        keystore_path = File.join("..", store_file)
+      end
+      
+      unless File.exist?(keystore_path)
+        UI.error("❌ Keystore file not found: #{keystore_path}")
+        raise "Missing keystore file"
+      end
+    end
+    
+    puts "✅ Android configuration validation passed"
+  end
+  
+  desc "Clean build artifacts"
+  lane :clean do
+    puts "🧹 Cleaning Android build artifacts..."
+    
+    sh("cd .. && flutter clean")
+    gradle(task: "clean")
+    
+    puts "✅ Android clean completed"
+  end
+  
+  # =============================================================================
+  # ERROR HANDLING
+  # =============================================================================
+  
+  error do |lane, exception|
+    puts "❌ Error in lane #{lane}: #{exception.message}"
+    
+    # Send notification if configured
+    if ENV["SLACK_WEBHOOK_URL"]
+      slack(
+        message: "❌ Android deployment failed in lane: #{lane}",
+        success: false,
+        slack_url: ENV["SLACK_WEBHOOK_URL"]
+      )
+    end
+  end
+  
+end

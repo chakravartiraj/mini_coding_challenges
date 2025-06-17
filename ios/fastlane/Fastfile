@@ -1,0 +1,249 @@
+# iOS Fastfile
+# This file contains the fastlane.tools configuration for iOS deployments
+# Use this file to define all available lanes for iOS
+
+default_platform(:ios)
+
+platform :ios do
+  # =============================================================================
+  # iOS SETUP AND UTILITIES
+  # =============================================================================
+  
+  desc "Setup iOS environment and dependencies"
+  lane :setup do
+    puts "🔧 Setting up iOS environment..."
+    
+    # Ensure Flutter dependencies are installed
+    sh("cd .. && flutter pub get")
+    
+    # Clean previous builds
+    sh("cd .. && flutter clean")
+    
+    # Install CocoaPods dependencies
+    cocoapods(
+      clean_install: true,
+      podfile: "./Podfile"
+    )
+    
+    puts "✅ iOS environment setup complete"
+  end
+  
+  desc "Run iOS tests"
+  lane :test do
+    puts "🧪 Running iOS tests..."
+    
+    # Run Flutter tests
+    sh("cd .. && flutter test")
+    
+    # Run iOS unit tests
+    scan(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      device: "iPhone 15"
+    )
+    
+    puts "✅ iOS tests completed"
+  end
+  
+  desc "Build iOS app"
+  lane :build do |options|
+    environment = options[:environment] || "debug"
+    
+    puts "🔨 Building iOS app for #{environment}..."
+    
+    setup
+    
+    if environment == "release"
+      sh("cd .. && flutter build ios --release --no-codesign")
+    else
+      sh("cd .. && flutter build ios --debug --no-codesign")
+    end
+    
+    puts "✅ iOS app build completed"
+  end
+  
+  desc "Build and sign iOS app for distribution"
+  lane :build_release do |options|
+    puts "🔨 Building and signing iOS app for release..."
+    
+    setup
+    
+    # Build Flutter iOS
+    sh("cd .. && flutter build ios --release --no-codesign")
+    
+    # Get certificates and provisioning profiles
+    match(type: "appstore", readonly: true)
+    
+    # Build and sign the app
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "Runner.ipa"
+    )
+    
+    puts "✅ iOS release build and signing completed"
+  end
+  
+  # =============================================================================
+  # DEPLOYMENT LANES
+  # =============================================================================
+  
+  desc "Deploy to TestFlight"
+  lane :deploy_testflight do |options|
+    puts "🚀 Deploying to TestFlight..."
+    
+    build_release
+    
+    upload_to_testflight(
+      ipa: "./build/Runner.ipa",
+      skip_waiting_for_build_processing: true,
+      skip_submission: true
+    )
+    
+    puts "✅ Deployed to TestFlight"
+  end
+  
+  desc "Deploy to App Store"
+  lane :deploy_appstore do |options|
+    puts "🚀 Deploying to App Store..."
+    
+    build_release
+    
+    upload_to_app_store(
+      ipa: "./build/Runner.ipa",
+      submit_for_review: false,
+      automatic_release: false,
+      skip_metadata: true,
+      skip_screenshots: true
+    )
+    
+    puts "✅ Deployed to App Store"
+  end
+  
+  desc "Deploy to Firebase App Distribution"
+  lane :deploy_firebase do |options|
+    puts "🔥 Deploying to Firebase App Distribution..."
+    
+    build_release
+    
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_IOS"],
+      ipa_path: "./build/Runner.ipa",
+      groups: "testers",
+      release_notes: "Latest build from #{git_branch}"
+    )
+    
+    puts "✅ Deployed to Firebase App Distribution"
+  end
+  
+  # =============================================================================
+  # CERTIFICATE AND PROVISIONING MANAGEMENT
+  # =============================================================================
+  
+  desc "Setup certificates and provisioning profiles"
+  lane :setup_certificates do |options|
+    puts "🔐 Setting up certificates and provisioning profiles..."
+    
+    match(
+      type: "development",
+      readonly: false,
+      force_for_new_devices: true
+    )
+    
+    match(
+      type: "appstore",
+      readonly: false
+    )
+    
+    puts "✅ Certificates and provisioning profiles setup completed"
+  end
+  
+  desc "Update certificates and provisioning profiles"
+  lane :update_certificates do
+    puts "🔄 Updating certificates and provisioning profiles..."
+    
+    match(type: "development", force: true)
+    match(type: "appstore", force: true)
+    
+    puts "✅ Certificates and provisioning profiles updated"
+  end
+  
+  # =============================================================================
+  # UTILITY LANES
+  # =============================================================================
+  
+  desc "Validate build configuration"
+  lane :validate do
+    puts "🔍 Validating iOS build configuration..."
+    
+    # Check if required environment variables are set
+    required_env_vars = [
+      "MATCH_PASSWORD",
+      "MATCH_GIT_URL"
+    ]
+    
+    required_env_vars.each do |env_var|
+      unless ENV[env_var]
+        UI.error("❌ Environment variable #{env_var} is not set!")
+        raise "Missing required environment variable: #{env_var}"
+      end
+    end
+    
+    # Check if workspace exists
+    unless File.exist?("Runner.xcworkspace")
+      UI.error("❌ Runner.xcworkspace not found!")
+      UI.error("Run 'flutter build ios' first to generate the workspace")
+      raise "Missing iOS workspace"
+    end
+    
+    puts "✅ iOS configuration validation passed"
+  end
+  
+  desc "Clean build artifacts"
+  lane :clean do
+    puts "🧹 Cleaning iOS build artifacts..."
+    
+    sh("cd .. && flutter clean")
+    clear_derived_data
+    
+    puts "✅ iOS clean completed"
+  end
+  
+  desc "Register new device"
+  lane :add_device do |options|
+    device_name = options[:name] || UI.input("Device name: ")
+    device_udid = options[:udid] || UI.input("Device UDID: ")
+    
+    register_devices(
+      devices: {
+        device_name => device_udid
+      }
+    )
+    
+    # Update provisioning profiles with new device
+    match(type: "development", force_for_new_devices: true)
+    
+    puts "✅ Device registered and provisioning profiles updated"
+  end
+  
+  # =============================================================================
+  # ERROR HANDLING
+  # =============================================================================
+  
+  error do |lane, exception|
+    puts "❌ Error in lane #{lane}: #{exception.message}"
+    
+    # Send notification if configured
+    if ENV["SLACK_WEBHOOK_URL"]
+      slack(
+        message: "❌ iOS deployment failed in lane: #{lane}",
+        success: false,
+        slack_url: ENV["SLACK_WEBHOOK_URL"]
+      )
+    end
+  end
+  
+end

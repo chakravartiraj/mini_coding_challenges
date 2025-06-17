@@ -1,121 +1,51 @@
-name: 🚀 Fastlane Deployment Pipeline
+name: 🚀 Mini Coding Challenges - Fastlane Deployment Pipeline
 
 on:
   push:
-    branches: [ main, develop, release/* ]
+    branches: [ main, develop ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       platform:
         description: 'Platform to deploy'
         required: true
-        default: 'both'
+        default: 'android'
         type: choice
         options:
           - android
           - ios
           - both
-      environment:
-        description: 'Environment to deploy to'
+      track:
+        description: 'Deployment track'
         required: true
-        default: 'staging'
+        default: 'internal'
         type: choice
         options:
-          - dev
-          - staging
+          - internal
+          - alpha
+          - beta
           - production
-      lane:
-        description: 'Specific lane to run'
-        required: false
-        type: string
+          - firebase
 
-# Cancel previous runs for the same workflow
 concurrency:
   group: fastlane-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.16.0'
+  FLUTTER_VERSION: '3.16.9'
   RUBY_VERSION: '3.1'
 
 jobs:
-  # =============================================================================
-  # SETUP AND PREPARATION
-  # =============================================================================
-  setup:
-    name: 🔧 Setup Environment
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      deploy-android: ${{ steps.determine-deployment.outputs.deploy-android }}
-      deploy-ios: ${{ steps.determine-deployment.outputs.deploy-ios }}
-      environment: ${{ steps.determine-deployment.outputs.environment }}
-      should-deploy: ${{ steps.determine-deployment.outputs.should-deploy }}
-    
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: 🎯 Determine Deployment Strategy
-        id: determine-deployment
-        run: |
-          # Determine platforms to deploy
-          if [[ "${{ github.event.inputs.platform }}" == "android" ]]; then
-            echo "deploy-android=true" >> $GITHUB_OUTPUT
-            echo "deploy-ios=false" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.inputs.platform }}" == "ios" ]]; then
-            echo "deploy-android=false" >> $GITHUB_OUTPUT
-            echo "deploy-ios=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy-android=true" >> $GITHUB_OUTPUT
-            echo "deploy-ios=true" >> $GITHUB_OUTPUT
-          fi
-          
-          # Determine environment
-          if [[ "${{ github.event.inputs.environment }}" != "" ]]; then
-            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "environment=staging" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "environment=production" >> $GITHUB_OUTPUT
-          else
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          fi
-          
-          # Determine if we should deploy
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
-             [[ "${{ github.ref }}" == "refs/heads/main" ]] || \
-             [[ "${{ github.ref }}" == "refs/heads/develop" ]] || \
-             [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
-          else
-            echo "should-deploy=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: 📋 Deployment Summary
-        run: |
-          echo "🎯 Deployment Configuration:"
-          echo "├── Android: ${{ steps.determine-deployment.outputs.deploy-android }}"
-          echo "├── iOS: ${{ steps.determine-deployment.outputs.deploy-ios }}"
-          echo "├── Environment: ${{ steps.determine-deployment.outputs.environment }}"
-          echo "└── Should Deploy: ${{ steps.determine-deployment.outputs.should-deploy }}"
-
   # =============================================================================
   # ANDROID DEPLOYMENT
   # =============================================================================
   deploy-android:
     name: 🤖 Android Deployment
     runs-on: ubuntu-latest
-    needs: setup
-    if: needs.setup.outputs.deploy-android == 'true' && needs.setup.outputs.should-deploy == 'true'
-    timeout-minutes: 45
-    environment: ${{ needs.setup.outputs.environment }}
+    if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'both' || github.event_name != 'workflow_dispatch'
+    timeout-minutes: 30
     
     steps:
       - name: 📥 Checkout Repository
@@ -128,7 +58,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
       
       - name: 🔧 Setup Flutter
         uses: subosito/flutter-action@v2
@@ -141,89 +70,127 @@ jobs:
         with:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
+          working-directory: android
       
-      - name: 📦 Install Dependencies
-        run: |
-          flutter pub get
-          bundle install
-      
-      - name: 🔐 Setup Android Signing
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          # Create keystore from base64
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
-          
-          # Create key.properties
-          cat > android/key.properties << EOF
-          storePassword=$ANDROID_KEYSTORE_PASSWORD
-          keyPassword=$ANDROID_KEY_PASSWORD
-          keyAlias=$ANDROID_KEY_ALIAS
-          storeFile=keystore.jks
-          EOF
-      
-      - name: 🔥 Setup Firebase Service Account
-        if: env.FIREBASE_SERVICE_ACCOUNT_KEY != ''
-        env:
-          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_KEY" > android/firebase-service-account.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/android/firebase-service-account.json" >> $GITHUB_ENV
-      
-      - name: 📱 Setup Google Play Service Account
-        if: env.GOOGLE_PLAY_JSON_KEY != ''
-        env:
-          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
-        run: |
-          echo "$GOOGLE_PLAY_JSON_KEY" > android/google-play-service-account.json
-          echo "GOOGLE_PLAY_JSON_KEY_PATH=$(pwd)/android/google-play-service-account.json" >> $GITHUB_ENV
-      
-      - name: 🚀 Deploy with Fastlane
-        env:
-          FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          ENVIRONMENT: ${{ needs.setup.outputs.environment }}
-          SPECIFIC_LANE: ${{ github.event.inputs.lane }}
+      - name: 📦 Install Android Dependencies
         run: |
           cd android
-          if [[ "$SPECIFIC_LANE" != "" ]]; then
-            bundle exec fastlane $SPECIFIC_LANE
+          bundle install
+      
+      - name: 📦 Install Flutter Dependencies
+        run: flutter pub get
+      
+      - name: 🔍 Validate Build Configuration
+        run: |
+          cd android
+          bundle exec fastlane validate
+      
+      - name: 🧪 Run Tests
+        run: |
+          cd android
+          bundle exec fastlane test
+      
+      - name: 🔨 Build APK (Debug)
+        if: github.event_name == 'pull_request'
+        run: |
+          cd android
+          bundle exec fastlane build_apk environment:debug
+      
+      - name: 🔐 Setup Android Signing
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [[ -n "$KEYSTORE_BASE64" && -n "$STORE_PASSWORD" && -n "$KEY_PASSWORD" && -n "$KEY_ALIAS" ]]; then
+            echo "🔐 Setting up Android signing with provided keystore..."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/keystore.jks
+            
+            cat > android/key.properties << 'EOF'
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=keystore.jks
+          EOF
+            echo "✅ Android keystore configured successfully"
           else
-            bundle exec fastlane $ENVIRONMENT
+            echo "⚠️ Some Android signing secrets are missing:"
+            [[ -z "$KEYSTORE_BASE64" ]] && echo "  - ANDROID_KEYSTORE_BASE64 not set"
+            [[ -z "$STORE_PASSWORD" ]] && echo "  - ANDROID_STORE_PASSWORD not set"
+            [[ -z "$KEY_PASSWORD" ]] && echo "  - ANDROID_KEY_PASSWORD not set"
+            [[ -z "$KEY_ALIAS" ]] && echo "  - ANDROID_KEY_ALIAS not set"
+            echo "ℹ️ Using existing key.properties file (if available)"
+          fi
+      
+      - name: 📦 Build App Bundle (Release)
+        if: github.event_name != 'pull_request'
+        run: |
+          cd android
+          bundle exec fastlane build_bundle environment:release
+      
+      - name: 🚀 Deploy to Firebase
+        if: github.event.inputs.track == 'firebase' && github.event_name == 'workflow_dispatch'
+        env:
+          FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [[ -z "$FIREBASE_APP_ID_ANDROID" || -z "$FIREBASE_TOKEN" ]]; then
+            echo "⚠️ Firebase credentials not configured, skipping Firebase deployment"
+            exit 0
+          fi
+          
+          cd android
+          bundle exec fastlane deploy_firebase
+      
+      - name: 🏪 Deploy to Google Play
+        if: github.event.inputs.track != 'firebase' && github.event_name == 'workflow_dispatch'
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+          TRACK: ${{ github.event.inputs.track || 'internal' }}
+        run: |
+          if [[ -n "$GOOGLE_PLAY_JSON_KEY" ]]; then
+            echo "$GOOGLE_PLAY_JSON_KEY" > android/google-play-service-account.json
+            export GOOGLE_PLAY_JSON_KEY_PATH="$(pwd)/android/google-play-service-account.json"
+            
+            cd android
+            case "$TRACK" in
+              "internal")
+                bundle exec fastlane deploy_internal
+                ;;
+              "alpha")
+                bundle exec fastlane deploy_alpha
+                ;;
+              "beta")
+                bundle exec fastlane deploy_beta
+                ;;
+              "production")
+                bundle exec fastlane deploy_production
+                ;;
+            esac
+          else
+            echo "⚠️ No Google Play JSON key found, skipping deployment"
           fi
       
       - name: 📦 Upload Build Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-build-${{ needs.setup.outputs.environment }}-${{ github.run_number }}
+          name: android-build-${{ github.run_number }}
           path: |
-            build/app/outputs/
-            android/fastlane/report.xml
-            android/fastlane/logs/
-          retention-days: 30
-      
-      - name: 📊 Upload Test Results
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Android Tests
-          path: android/fastlane/report.xml
-          reporter: java-junit
+            build/app/outputs/flutter-apk/**.apk
+            build/app/outputs/bundle/release/**.aab
+          retention-days: 7
 
   # =============================================================================
   # iOS DEPLOYMENT
   # =============================================================================
   deploy-ios:
     name: 🍎 iOS Deployment
-    runs-on: macos-14
-    needs: setup
-    if: needs.setup.outputs.deploy-ios == 'true' && needs.setup.outputs.should-deploy == 'true'
-    timeout-minutes: 60
-    environment: ${{ needs.setup.outputs.environment }}
+    runs-on: macos-latest
+    if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'both'
+    timeout-minutes: 45
     
     steps:
       - name: 📥 Checkout Repository
@@ -242,145 +209,160 @@ jobs:
         with:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
+          working-directory: ios
       
-      - name: 📦 Install Dependencies
-        run: |
-          flutter pub get
-          bundle install
-          cd ios && pod install
-      
-      - name: 🔐 Setup iOS Code Signing
-        env:
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-        run: |
-          # Setup API key for App Store Connect
-          mkdir -p ~/.appstoreconnect/private_keys/
-          echo "$APP_STORE_CONNECT_API_KEY" > ~/.appstoreconnect/private_keys/AuthKey_$APP_STORE_CONNECT_API_KEY_ID.p8
-          echo "APP_STORE_CONNECT_API_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_$APP_STORE_CONNECT_API_KEY_ID.p8" >> $GITHUB_ENV
-          
-          # Create temporary git config for match
-          git config --global user.email "ci@example.com"
-          git config --global user.name "CI Runner"
-      
-      - name: 🔥 Setup Firebase Service Account
-        if: env.FIREBASE_SERVICE_ACCOUNT_KEY != ''
-        env:
-          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-        run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_KEY" > ios/firebase-service-account.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/ios/firebase-service-account.json" >> $GITHUB_ENV
-      
-      - name: 🚀 Deploy with Fastlane
-        env:
-          FIREBASE_APP_ID_IOS: ${{ secrets.FIREBASE_APP_ID_IOS }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          ENVIRONMENT: ${{ needs.setup.outputs.environment }}
-          SPECIFIC_LANE: ${{ github.event.inputs.lane }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: 📦 Install iOS Dependencies
         run: |
           cd ios
-          if [[ "$SPECIFIC_LANE" != "" ]]; then
-            bundle exec fastlane $SPECIFIC_LANE
+          bundle install
+      
+      - name: 📦 Install Flutter Dependencies
+        run: flutter pub get
+      
+      - name: 🔍 Validate Build Configuration
+        run: |
+          cd ios
+          # Only run validation if required secrets are available
+          if [[ -n "$MATCH_PASSWORD" && -n "$MATCH_GIT_URL" ]]; then
+            bundle exec fastlane validate
           else
-            bundle exec fastlane $ENVIRONMENT
+            echo "⚠️ iOS signing credentials not configured, skipping full validation"
+            echo "✅ Basic iOS configuration check passed"
           fi
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      
+      - name: 🧪 Run Tests
+        run: |
+          cd ios
+          bundle exec fastlane test
+      
+      - name: 🔐 Setup iOS Code Signing
+        if: github.event_name != 'pull_request'
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+        run: |
+          if [[ -z "$MATCH_PASSWORD" || -z "$MATCH_GIT_URL" ]]; then
+            echo "⚠️ iOS signing credentials not configured, skipping certificate setup"
+            exit 0
+          fi
+          
+          cd ios
+          bundle exec fastlane setup_certificates
+      
+      - name: 🔨 Build iOS App
+        if: github.event_name != 'pull_request'
+        run: |
+          cd ios
+          bundle exec fastlane build_release
+      
+      - name: 🚀 Deploy to Firebase
+        if: github.event.inputs.track == 'firebase' && github.event_name == 'workflow_dispatch'
+        env:
+          FIREBASE_APP_ID_IOS: ${{ secrets.FIREBASE_APP_ID_IOS }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [[ -z "$FIREBASE_APP_ID_IOS" || -z "$FIREBASE_TOKEN" ]]; then
+            echo "⚠️ Firebase credentials not configured, skipping Firebase deployment"
+            exit 0
+          fi
+          
+          cd ios
+          bundle exec fastlane deploy_firebase
+      
+      - name: ✈️ Deploy to TestFlight
+        if: github.event.inputs.track != 'firebase' && github.event_name == 'workflow_dispatch'
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          if [[ -z "$APP_STORE_CONNECT_API_KEY_ID" || -z "$APP_STORE_CONNECT_API_ISSUER_ID" || -z "$APP_STORE_CONNECT_API_KEY_CONTENT" ]]; then
+            echo "⚠️ App Store Connect API credentials not configured, skipping TestFlight deployment"
+            exit 0
+          fi
+          
+          cd ios
+          bundle exec fastlane deploy_testflight
       
       - name: 📦 Upload Build Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-${{ needs.setup.outputs.environment }}-${{ github.run_number }}
+          name: ios-build-${{ github.run_number }}
           path: |
-            build/ios/
-            ios/fastlane/report.xml
-            ios/fastlane/logs/
-          retention-days: 30
-      
-      - name: 📊 Upload Test Results
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: iOS Tests
-          path: ios/fastlane/report.xml
-          reporter: java-junit
+            ios/build/**.ipa
+            ios/build/**.dSYM.zip
+          retention-days: 7
 
   # =============================================================================
-  # NOTIFICATION AND REPORTING
+  # NOTIFICATION
   # =============================================================================
-  notify-completion:
-    name: 📢 Deployment Notification
+  notify:
+    name: 📢 Send Notification
     runs-on: ubuntu-latest
-    needs: [setup, deploy-android, deploy-ios]
-    if: always() && needs.setup.outputs.should-deploy == 'true'
+    needs: [deploy-android, deploy-ios]
+    if: always() && github.event_name == 'workflow_dispatch'
     
     steps:
-      - name: 📊 Determine Overall Status
-        id: status
-        run: |
-          android_status="${{ needs.deploy-android.result }}"
-          ios_status="${{ needs.deploy-ios.result }}"
-          
-          if [[ "$android_status" == "success" || "$android_status" == "skipped" ]] && \
-             [[ "$ios_status" == "success" || "$ios_status" == "skipped" ]]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "message=✅ Deployment completed successfully" >> $GITHUB_OUTPUT
-          else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "message=❌ Deployment failed" >> $GITHUB_OUTPUT
-          fi
-      
       - name: 📢 Send Slack Notification
-        if: env.SLACK_WEBHOOK_URL != ''
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ steps.status.outputs.status }}
-          channel: '#deployments'
-          webhook_url: ${{ env.SLACK_WEBHOOK_URL }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow
-          custom_payload: |
-            {
-              text: "${{ steps.status.outputs.message }}",
-              attachments: [{
-                color: '${{ steps.status.outputs.status }}' === 'success' ? 'good' : 'danger',
-                fields: [{
-                  title: 'Environment',
-                  value: '${{ needs.setup.outputs.environment }}',
-                  short: true
-                }, {
-                  title: 'Android',
-                  value: '${{ needs.deploy-android.result }}',
-                  short: true
-                }, {
-                  title: 'iOS', 
-                  value: '${{ needs.deploy-ios.result }}',
-                  short: true
-                }, {
-                  title: 'Triggered by',
-                  value: '${{ github.actor }}',
-                  short: true
-                }]
-              }]
-            }
-      
-      - name: 📋 Deployment Summary
         run: |
-          echo "🚀 Fastlane Deployment Summary"
-          echo "=================================="
-          echo "Environment: ${{ needs.setup.outputs.environment }}"
-          echo "Android: ${{ needs.deploy-android.result }}"
-          echo "iOS: ${{ needs.deploy-ios.result }}"
-          echo "Overall: ${{ steps.status.outputs.status }}"
-          echo "=================================="
+          # Only send notification if webhook URL is configured
+          if [[ -z "$SLACK_WEBHOOK_URL" ]]; then
+            echo "⚠️ No Slack webhook URL configured, skipping notification"
+            exit 0
+          fi
+          
+          # Determine overall status
+          ANDROID_STATUS="${{ needs.deploy-android.result }}"
+          IOS_STATUS="${{ needs.deploy-ios.result }}"
+          
+          if [[ "$ANDROID_STATUS" == "success" ]] && [[ "$IOS_STATUS" == "success" || "$IOS_STATUS" == "skipped" ]]; then
+            OVERALL_STATUS="✅ Success"
+            COLOR="good"
+          elif [[ "$ANDROID_STATUS" == "failure" ]] || [[ "$IOS_STATUS" == "failure" ]]; then
+            OVERALL_STATUS="❌ Failed"
+            COLOR="danger"
+          else
+            OVERALL_STATUS="⚠️ Partial"
+            COLOR="warning"
+          fi
+          
+          # Send notification
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "attachments": [
+                {
+                  "color": "'$COLOR'",
+                  "title": "🚀 Fastlane Deployment Complete",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "value": "'$OVERALL_STATUS'",
+                      "short": true
+                    },
+                    {
+                      "title": "Platform",
+                      "value": "${{ github.event.inputs.platform }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Track",
+                      "value": "${{ github.event.inputs.track }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    }
+                  ]
+                }
+              ]
+            }' \
+            $SLACK_WEBHOOK_URL
