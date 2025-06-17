@@ -24,6 +24,34 @@ Welcome to the Mini Coding Challenges Flutter project! This project demonstrates
 | **[Linting Implementation Summary](lib/docs/linting/LINTING_IMPLEMENTATION_SUMMARY.md)** | Google Flutter Team standards | Code reviewers | 10 minutes |
 | **[Linting Fixes Summary](lib/docs/linting/LINTING_FIXES_SUMMARY.md)** | Issues resolved during implementation | Team leads | 5 minutes |
 
+### 🔐 Android Keystore & Signing
+
+| Document | Purpose | Audience | Time to Read |
+|----------|---------|----------|--------------|
+| **[Complete Keystore Guide](setup/ANDROID_KEYSTORE_COMPLETE_GUIDE.md)** | Comprehensive keystore workflow | All developers | 30 minutes |
+| **[Keystore Creation Guide](setup/ANDROID_KEYSTORE_GUIDE.md)** | Basic keystore concepts | Junior developers | 15 minutes |
+| **[Signing Setup Guide](setup/ANDROID_SIGNING_SETUP.md)** | Step-by-step signing setup | DevOps, Build engineers | 20 minutes |
+| **[Signing Success Verification](setup/ANDROID_SIGNING_SUCCESS.md)** | Verification procedures | QA, Release managers | 10 minutes |
+
+### 🛠️ Interactive Scripts & Tools
+
+| Script | Purpose | Audience | Usage Time |
+|--------|---------|----------|------------|
+| **[Interactive Scripts Guide](../scripts/README.md)** | Complete scripts documentation | All developers | 20 minutes |
+| **`create-keystore.sh`** | Interactive keystore creation | All developers | 5 minutes |
+| **`verify-builds.sh`** | Build verification automation | DevOps, QA | 2 minutes |
+| **`keystore-training.sh`** | CLI training for keystores | Junior developers | 30 minutes |
+| **`test_coverage_report.sh`** | Test coverage analysis | QA, Developers | 3 minutes |
+
+### 🎓 Training & Learning
+
+| Document | Purpose | Audience | Time to Read |
+|----------|---------|----------|--------------|
+| **[CLI Training Overview](training/README.md)** | Command-line training resources | Junior developers | 10 minutes |
+| **[CLI Commands Guide](training/CLI_COMMANDS_GUIDE.md)** | Essential CLI commands | All developers | 25 minutes |
+| **[CLI Practice Exercises](training/CLI_COMMANDS_PRACTICE.md)** | Hands-on practice | Junior developers | 60 minutes |
+| **[CLI Quick Reference](training/CLI_QUICK_REFERENCE.md)** | Command reference sheet | All developers | 5 minutes |
+
 ### 📋 Quick Reference
 
 #### 🏃‍♂️ Quick Start (5 minutes)

@@ -68,6 +68,69 @@ Development, staging, and production environment setup.
 - **Purpose**: Multi-environment configuration management
 - **Content**: Dev/staging/prod configs, environment variables, secrets management
 
+### 📱 **Mobile App Signing & Distribution**
+Android and iOS app signing configuration for production releases.
+
+#### **[Android Keystore Guide](./ANDROID_KEYSTORE_GUIDE.md)**
+- **Purpose**: Complete guide for creating and managing Android keystores
+- **Content**: Keystore creation, security best practices, CI/CD integration, troubleshooting
+- **Features**: Step-by-step instructions, reusable keystore strategy, Play Store preparation
+
+#### **[Android Signing Setup](./ANDROID_SIGNING_SETUP.md)**
+- **Purpose**: Project-specific Android signing configuration
+- **Content**: build.gradle.kts setup, key.properties configuration, security checklist
+- **Features**: Ready-to-use configuration, troubleshooting guide, release build instructions
+
+#### **[Android Complete Signing Guide](./ANDROID_COMPLETE_SIGNING_GUIDE.md)**
+- **Purpose**: Comprehensive step-by-step guide for keystore creation and app signing
+- **Content**: Password escaping, build verification, signature validation, troubleshooting
+- **Features**: Complete workflow, verification scripts, common issues resolution
+
+### 🔐 **Android Keystore & App Signing**
+Android application signing setup, keystore management, and security best practices.
+
+#### **[Complete Keystore Guide](./ANDROID_KEYSTORE_COMPLETE_GUIDE.md)** ⭐ **RECOMMENDED**
+- **Purpose**: Comprehensive end-to-end keystore workflow
+- **Content**: Interactive setup, security practices, troubleshooting, CI/CD integration
+- **Audience**: All developers, DevOps engineers
+- **Time**: 30 minutes
+
+#### **[Keystore Creation Guide](./ANDROID_KEYSTORE_GUIDE.md)**
+- **Purpose**: Basic keystore concepts and creation steps
+- **Content**: keytool usage, certificate basics, initial setup
+- **Audience**: Junior developers, new team members
+- **Time**: 15 minutes
+
+#### **[Signing Setup Guide](./ANDROID_SIGNING_SETUP.md)**
+- **Purpose**: Step-by-step Flutter project signing configuration
+- **Content**: build.gradle setup, key.properties configuration, build verification
+- **Audience**: DevOps engineers, build specialists
+- **Time**: 20 minutes
+
+#### **[Signing Success Verification](./ANDROID_SIGNING_SUCCESS.md)**
+- **Purpose**: Verification procedures for signed builds
+- **Content**: Signature validation, certificate checking, deployment readiness
+- **Audience**: QA engineers, release managers
+- **Time**: 10 minutes
+
+#### **[Keystore Success Summary](./ANDROID_KEYSTORE_SUCCESS_SUMMARY.md)**
+- **Purpose**: Complete implementation overview and success metrics
+- **Content**: What's implemented, verification results, next steps
+- **Audience**: Project managers, team leads
+- **Time**: 15 minutes
+
+### 🛠️ **Interactive Scripts & Automation**
+Automated tools and interactive scripts for development workflow.
+
+#### **[Scripts Documentation](../../scripts/README.md)** ⭐ **ESSENTIAL**
+- **Purpose**: Complete guide to all interactive scripts
+- **Content**: Script usage, features, troubleshooting, customization
+- **Scripts Included**:
+  - `create-keystore.sh` - Interactive keystore creation
+  - `verify-builds.sh` - Build verification automation  
+  - `keystore-training.sh` - CLI training for keystores
+  - `test_coverage_report.sh` - Test coverage analysis
+
 ## 🎯 **Quick Setup Paths**
 
 ### **🚀 New Developer Setup**
@@ -82,9 +145,11 @@ Development, staging, and production environment setup.
 3. [CI/CD Performance Optimization Guide](./CI_CD_PERFORMANCE_OPTIMIZATION_GUIDE.md) - Optimize performance
 
 ### **📱 Mobile Deployment**
-1. [Fastlane Complete Documentation](./FASTLANE_COMPLETE_DOCUMENTATION.md) - Complete setup
-2. [Fastlane Integration Status](./FASTLANE_INTEGRATION_STATUS.md) - Current status
-3. [Fastlane Integration Verification](./FASTLANE_INTEGRATION_VERIFICATION.md) - Verify setup
+1. [Android Keystore Guide](./ANDROID_KEYSTORE_GUIDE.md) - Create and configure app signing
+2. [Android Signing Setup](./ANDROID_SIGNING_SETUP.md) - Project-specific signing configuration
+3. [Fastlane Complete Documentation](./FASTLANE_COMPLETE_DOCUMENTATION.md) - Complete setup
+4. [Fastlane Integration Status](./FASTLANE_INTEGRATION_STATUS.md) - Current status
+5. [Fastlane Integration Verification](./FASTLANE_INTEGRATION_VERIFICATION.md) - Verify setup
 
 ## 🛠️ **Tools & Technologies**
 
