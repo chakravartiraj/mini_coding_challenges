@@ -1,0 +1,95 @@
+# Android Configuration for Multiple Environments
+# ==============================================
+
+android {
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11.toString()
+    }
+
+    defaultConfig {
+        applicationId "com.example.mini_coding_challenges"
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+
+    // Signing configurations
+    signingConfigs {
+        release {
+            if (project.hasProperty('android.injected.signing.store.file')) {
+                storeFile file(project.property('android.injected.signing.store.file'))
+                storePassword project.property('android.injected.signing.store.password')
+                keyAlias project.property('android.injected.signing.key.alias')
+                keyPassword project.property('android.injected.signing.key.password')
+            } else if (file('keystore.jks').exists()) {
+                def keystoreProperties = new Properties()
+                def keystorePropertiesFile = rootProject.file('key.properties')
+                if (keystorePropertiesFile.exists()) {
+                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                }
+                
+                storeFile file(keystoreProperties['storeFile'] ?: 'keystore.jks')
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    // Product flavors for different environments
+    flavorDimensions "environment"
+    
+    productFlavors {
+        dev {
+            dimension "environment"
+            applicationIdSuffix ".dev"
+            versionNameSuffix "-dev"
+            resValue "string", "app_name", "Mini Challenges (Dev)"
+            buildConfigField "String", "API_BASE_URL", '"https://dev-api.example.com"'
+            buildConfigField "String", "ENVIRONMENT", '"dev"'
+        }
+        
+        staging {
+            dimension "environment"
+            applicationIdSuffix ".staging"
+            versionNameSuffix "-staging"
+            resValue "string", "app_name", "Mini Challenges (Staging)"
+            buildConfigField "String", "API_BASE_URL", '"https://staging-api.example.com"'
+            buildConfigField "String", "ENVIRONMENT", '"staging"'
+        }
+        
+        production {
+            dimension "environment"
+            resValue "string", "app_name", "Mini Coding Challenges"
+            buildConfigField "String", "API_BASE_URL", '"https://api.example.com"'
+            buildConfigField "String", "ENVIRONMENT", '"production"'
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.debug
+        }
+        
+        release {
+            debuggable false
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.release
+            
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}

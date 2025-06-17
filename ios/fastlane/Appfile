@@ -1,0 +1,17 @@
+# iOS-specific Fastlane configuration
+# ===================================
+
+# App identifier (bundle ID)
+app_identifier("com.example.miniCodingChallenges")
+
+# Apple ID for App Store Connect
+apple_id(ENV["APPLE_ID"])
+
+# Team ID for development team
+team_id(ENV["APPLE_TEAM_ID"])
+
+# iTunes Connect Team ID (if different from development team)
+itunes_connect_team_id(ENV["APPLE_TEAM_ID"])
+
+# For Firebase App Distribution
+firebase_app_id(ENV["FIREBASE_APP_ID_IOS"])

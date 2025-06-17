@@ -1,0 +1,609 @@
+# Fastlane Configuration for Mini Coding Challenges
+# ==============================================
+#
+# This file contains the fastlane configuration for automating the build,
+# test, and deployment processes for both Android and iOS platforms.
+#
+# Features:
+# - Automated versioning and changelog generation
+# - Multi-environment deployments (dev, staging, production)
+# - Code signing automation
+# - Firebase App Distribution integration
+# - Google Play Console and App Store Connect uploads
+# - Slack notifications and reporting
+# - Quality gates and testing integration
+
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+# Global variables and configuration
+PROJECT_NAME = "Mini Coding Challenges"
+ANDROID_PACKAGE_NAME = "com.example.mini_coding_challenges"
+IOS_BUNDLE_ID = "com.example.miniCodingChallenges"
+FIREBASE_APP_ID_ANDROID = ENV["FIREBASE_APP_ID_ANDROID"]
+FIREBASE_APP_ID_IOS = ENV["FIREBASE_APP_ID_IOS"]
+SLACK_URL = ENV["SLACK_WEBHOOK_URL"]
+
+# =============================================================================
+# BEFORE ALL - SETUP AND VALIDATION
+# =============================================================================
+
+before_all do |lane, options|
+  puts "🚀 Starting Fastlane for #{PROJECT_NAME}"
+  puts "📋 Lane: #{lane}"
+  puts "⚙️  Options: #{options}"
+  
+  # Ensure we're in the right directory
+  ensure_git_status_clean unless options[:skip_git_check]
+  
+  # Setup environment
+  setup_ci if is_ci
+  
+  # Flutter setup
+  sh("flutter", "doctor")
+  sh("flutter", "pub", "get")
+  
+  puts "✅ Pre-flight checks completed"
+end
+
+# =============================================================================
+# AFTER ALL - CLEANUP AND NOTIFICATIONS
+# =============================================================================
+
+after_all do |lane|
+  puts "✅ #{lane} completed successfully"
+  
+  # Send success notification
+  if SLACK_URL && !SLACK_URL.empty?
+    slack(
+      message: "✅ #{PROJECT_NAME}: #{lane} completed successfully",
+      channel: "#deployments",
+      success: true,
+      default_payloads: [:git_branch, :git_author, :lane]
+    )
+  end
+end
+
+error do |lane, exception|
+  puts "❌ #{lane} failed: #{exception.message}"
+  
+  # Send failure notification
+  if SLACK_URL && !SLACK_URL.empty?
+    slack(
+      message: "❌ #{PROJECT_NAME}: #{lane} failed",
+      channel: "#deployments",
+      success: false,
+      payload: {
+        "Error" => exception.message
+      },
+      default_payloads: [:git_branch, :git_author, :lane]
+    )
+  end
+end
+
+# =============================================================================
+# SHARED LANES (CROSS-PLATFORM)
+# =============================================================================
+
+# Quality assurance and testing
+lane :quality_check do
+  desc "Run comprehensive quality checks"
+  
+  puts "🔍 Running quality checks..."
+  
+  # Code formatting
+  sh("dart", "format", "--set-exit-if-changed", ".")
+  
+  # Static analysis
+  sh("flutter", "analyze", "--fatal-infos")
+  
+  # Run tests
+  sh("flutter", "test", "--coverage")
+  
+  # Generate test reports
+  if File.exist?("coverage/lcov.info")
+    puts "📊 Test coverage report generated"
+  end
+  
+  puts "✅ Quality checks passed"
+end
+
+# Version management
+lane :bump_version do |options|
+  desc "Bump version number"
+  
+  version_type = options[:type] || "patch" # major, minor, patch
+  
+  puts "📈 Bumping #{version_type} version..."
+  
+  # Update Flutter version
+  flutter_version(
+    path: "pubspec.yaml",
+    version_bump_type: version_type
+  )
+  
+  # Commit version change
+  version = get_flutter_version(path: "pubspec.yaml")
+  git_add(path: "pubspec.yaml")
+  git_commit(path: "pubspec.yaml", message: "chore: bump version to #{version}")
+  
+  puts "✅ Version bumped to #{version}"
+end
+
+# Clean build artifacts
+lane :clean_build do
+  desc "Clean build artifacts"
+  
+  puts "🧹 Cleaning build artifacts..."
+  
+  sh("flutter", "clean")
+  sh("flutter", "pub", "get")
+  
+  # Clean platform-specific artifacts
+  sh("cd", "android", "&&", "./gradlew", "clean") if Dir.exist?("android")
+  sh("cd", "ios", "&&", "rm", "-rf", "build/") if Dir.exist?("ios")
+  
+  puts "✅ Build artifacts cleaned"
+end
+
+# =============================================================================
+# ANDROID PLATFORM
+# =============================================================================
+
+platform :android do
+  
+  # Development build
+  lane :dev do
+    desc "Build and distribute development version"
+    
+    puts "🤖 Building Android development version..."
+    
+    # Quality checks
+    quality_check
+    
+    # Build debug APK
+    sh("flutter", "build", "apk", "--debug", "--flavor", "dev", "--target", "lib/main_dev.dart")
+    
+    # Distribute via Firebase
+    if FIREBASE_APP_ID_ANDROID && !FIREBASE_APP_ID_ANDROID.empty?
+      firebase_app_distribution(
+        app: FIREBASE_APP_ID_ANDROID,
+        apk_path: "build/app/outputs/flutter-apk/app-dev-debug.apk",
+        groups: "developers",
+        release_notes: "Development build - #{git_branch} - #{short_git_commit_hash}"
+      )
+      puts "🔥 Distributed via Firebase App Distribution"
+    end
+    
+    puts "✅ Android development build completed"
+  end
+  
+  # Staging build
+  lane :staging do
+    desc "Build and distribute staging version"
+    
+    puts "🤖 Building Android staging version..."
+    
+    # Quality checks
+    quality_check
+    
+    # Build release APK
+    sh("flutter", "build", "apk", "--release", "--flavor", "staging", "--target", "lib/main_staging.dart")
+    
+    # Build AAB for Play Console
+    sh("flutter", "build", "appbundle", "--release", "--flavor", "staging", "--target", "lib/main_staging.dart")
+    
+    # Distribute via Firebase
+    if FIREBASE_APP_ID_ANDROID && !FIREBASE_APP_ID_ANDROID.empty?
+      firebase_app_distribution(
+        app: FIREBASE_APP_ID_ANDROID,
+        apk_path: "build/app/outputs/flutter-apk/app-staging-release.apk",
+        groups: "testers",
+        release_notes: changelog_from_git_commits(
+          pretty: "- %s",
+          commits_count: 10
+        )
+      )
+      puts "🔥 Distributed via Firebase App Distribution"
+    end
+    
+    puts "✅ Android staging build completed"
+  end
+  
+  # Production build and deployment
+  lane :production do
+    desc "Build and deploy production version to Google Play"
+    
+    puts "🤖 Building Android production version..."
+    
+    # Quality checks
+    quality_check
+    
+    # Bump version
+    bump_version(type: "patch")
+    
+    # Build production AAB
+    sh("flutter", "build", "appbundle", "--release", "--flavor", "production", "--target", "lib/main_production.dart")
+    
+    # Upload to Google Play Internal Testing
+    upload_to_play_store(
+      package_name: ANDROID_PACKAGE_NAME,
+      aab: "build/app/outputs/bundle/productionRelease/app-production-release.aab",
+      track: "internal",
+      release_status: "draft",
+      version_name: get_flutter_version(path: "pubspec.yaml"),
+      version_code: get_flutter_version_code(path: "pubspec.yaml")
+    )
+    
+    puts "✅ Android production build uploaded to Google Play"
+  end
+  
+  # Promote from internal to production
+  lane :promote_to_production do
+    desc "Promote internal track to production"
+    
+    puts "🚀 Promoting to Google Play production..."
+    
+    upload_to_play_store(
+      package_name: ANDROID_PACKAGE_NAME,
+      track: "internal",
+      track_promote_to: "production",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    puts "✅ Promoted to Google Play production"
+  end
+  
+  # Beta testing
+  lane :beta do
+    desc "Deploy to Google Play beta track"
+    
+    puts "🧪 Deploying Android beta version..."
+    
+    # Build AAB
+    sh("flutter", "build", "appbundle", "--release")
+    
+    # Upload to beta track
+    upload_to_play_store(
+      package_name: ANDROID_PACKAGE_NAME,
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      track: "beta",
+      release_status: "completed"
+    )
+    
+    puts "✅ Android beta deployed to Google Play"
+  end
+  
+end
+
+# =============================================================================
+# iOS PLATFORM
+# =============================================================================
+
+platform :ios do
+  
+  # Development build
+  lane :dev do
+    desc "Build and distribute development version"
+    
+    puts "🍎 Building iOS development version..."
+    
+    # Quality checks
+    quality_check
+    
+    # Code signing
+    match(type: "development", readonly: true)
+    
+    # Build debug IPA
+    sh("flutter", "build", "ios", "--debug", "--flavor", "dev", "--target", "lib/main_dev.dart")
+    
+    gym(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "dev",
+      configuration: "Debug-dev",
+      export_method: "development",
+      output_directory: "build/ios",
+      output_name: "app-dev-debug.ipa"
+    )
+    
+    # Distribute via Firebase
+    if FIREBASE_APP_ID_IOS && !FIREBASE_APP_ID_IOS.empty?
+      firebase_app_distribution(
+        app: FIREBASE_APP_ID_IOS,
+        ipa_path: "build/ios/app-dev-debug.ipa",
+        groups: "developers",
+        release_notes: "Development build - #{git_branch} - #{short_git_commit_hash}"
+      )
+      puts "🔥 Distributed via Firebase App Distribution"
+    end
+    
+    puts "✅ iOS development build completed"
+  end
+  
+  # Staging build
+  lane :staging do
+    desc "Build and distribute staging version"
+    
+    puts "🍎 Building iOS staging version..."
+    
+    # Quality checks
+    quality_check
+    
+    # Code signing
+    match(type: "adhoc", readonly: true)
+    
+    # Build release IPA
+    sh("flutter", "build", "ios", "--release", "--flavor", "staging", "--target", "lib/main_staging.dart")
+    
+    gym(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "staging",
+      configuration: "Release-staging",
+      export_method: "ad-hoc",
+      output_directory: "build/ios",
+      output_name: "app-staging-release.ipa"
+    )
+    
+    # Distribute via Firebase
+    if FIREBASE_APP_ID_IOS && !FIREBASE_APP_ID_IOS.empty?
+      firebase_app_distribution(
+        app: FIREBASE_APP_ID_IOS,
+        ipa_path: "build/ios/app-staging-release.ipa",
+        groups: "testers",
+        release_notes: changelog_from_git_commits(
+          pretty: "- %s",
+          commits_count: 10
+        )
+      )
+      puts "🔥 Distributed via Firebase App Distribution"
+    end
+    
+    puts "✅ iOS staging build completed"
+  end
+  
+  # Production build and TestFlight
+  lane :production do
+    desc "Build and deploy production version to TestFlight"
+    
+    puts "🍎 Building iOS production version..."
+    
+    # Quality checks
+    quality_check
+    
+    # Bump version
+    bump_version(type: "patch")
+    
+    # Code signing
+    match(type: "appstore", readonly: true)
+    
+    # Build production IPA
+    sh("flutter", "build", "ios", "--release", "--flavor", "production", "--target", "lib/main_production.dart")
+    
+    gym(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "production",
+      configuration: "Release-production",
+      export_method: "app-store",
+      output_directory: "build/ios",
+      output_name: "app-production-release.ipa"
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      ipa: "build/ios/app-production-release.ipa",
+      skip_waiting_for_build_processing: false,
+      groups: ["Internal Testing"]
+    )
+    
+    puts "✅ iOS production build uploaded to TestFlight"
+  end
+  
+  # Release to App Store
+  lane :release do
+    desc "Release to App Store"
+    
+    puts "🚀 Releasing to App Store..."
+    
+    upload_to_app_store(
+      ipa: "build/ios/app-production-release.ipa",
+      submit_for_review: false,
+      automatic_release: false,
+      force: true
+    )
+    
+    puts "✅ Released to App Store"
+  end
+  
+  # Beta testing via TestFlight
+  lane :beta do
+    desc "Deploy to TestFlight beta"
+    
+    puts "🧪 Deploying iOS beta version..."
+    
+    # Code signing
+    match(type: "appstore", readonly: true)
+    
+    # Build IPA
+    sh("flutter", "build", "ios", "--release")
+    
+    gym(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release",
+      export_method: "app-store"
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      groups: ["Beta Testers"],
+      changelog: changelog_from_git_commits(
+        pretty: "- %s",
+        commits_count: 10
+      )
+    )
+    
+    puts "✅ iOS beta deployed to TestFlight"
+  end
+  
+end
+
+# =============================================================================
+# UTILITY LANES
+# =============================================================================
+
+# Screenshots generation
+lane :screenshots do
+  desc "Generate screenshots for both platforms"
+  
+  puts "📸 Generating screenshots..."
+  
+  # iOS screenshots
+  if Dir.exist?("ios")
+    capture_ios_screenshots(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner"
+    )
+  end
+  
+  # Android screenshots (requires UI Automator setup)
+  # capture_android_screenshots
+  
+  puts "✅ Screenshots generated"
+end
+
+# Metadata management
+lane :update_metadata do
+  desc "Update app store metadata"
+  
+  puts "📝 Updating metadata..."
+  
+  # iOS metadata
+  if Dir.exist?("ios")
+    upload_to_app_store(
+      skip_binary_upload: true,
+      skip_screenshots: true
+    )
+  end
+  
+  # Android metadata
+  if Dir.exist?("android")
+    upload_to_play_store(
+      package_name: ANDROID_PACKAGE_NAME,
+      skip_upload_apk: true,
+      skip_upload_aab: true
+    )
+  end
+  
+  puts "✅ Metadata updated"
+end
+
+# Security and code signing
+lane :setup_code_signing do
+  desc "Setup code signing for iOS"
+  
+  puts "🔐 Setting up code signing..."
+  
+  match(
+    type: "development",
+    app_identifier: [IOS_BUNDLE_ID],
+    force_for_new_devices: true
+  )
+  
+  match(
+    type: "adhoc",
+    app_identifier: [IOS_BUNDLE_ID],
+    force_for_new_devices: true
+  )
+  
+  match(
+    type: "appstore",
+    app_identifier: [IOS_BUNDLE_ID]
+  )
+  
+  puts "✅ Code signing setup completed"
+end
+
+# Environment setup
+lane :setup_environment do |options|
+  desc "Setup development environment"
+  
+  environment = options[:env] || "dev"
+  
+  puts "⚙️ Setting up #{environment} environment..."
+  
+  # Create environment-specific files
+  case environment
+  when "dev"
+    File.write("lib/main_dev.dart", generate_main_file("dev"))
+  when "staging"
+    File.write("lib/main_staging.dart", generate_main_file("staging"))
+  when "production"
+    File.write("lib/main_production.dart", generate_main_file("production"))
+  end
+  
+  puts "✅ #{environment} environment setup completed"
+end
+
+# Helper method to generate main files
+def generate_main_file(environment)
+  """
+import 'package:flutter/material.dart';
+import 'package:mini_coding_challenges/core/di/injection.dart';
+import 'package:mini_coding_challenges/features/transactions/presentation/pages/transaction_list_page.dart';
+
+void main() {
+  configureDependencies();
+  runApp(MyApp(environment: '#{environment}'));
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key, required this.environment});
+  
+  final String environment;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+      title: 'Mini Coding Challenges (#{environment.upcase})',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: #{get_environment_color(environment)}
+        ),
+        useMaterial3: true,
+      ),
+      home: const TransactionListPage(),
+      debugShowCheckedModeBanner: #{environment != 'production'},
+    );
+}
+  """
+end
+
+def get_environment_color(environment)
+  case environment
+  when "dev"
+    "Colors.orange"
+  when "staging"
+    "Colors.purple"
+  when "production"
+    "Colors.deepPurple"
+  else
+    "Colors.blue"
+  end
+end

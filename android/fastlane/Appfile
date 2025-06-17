@@ -1,0 +1,14 @@
+# Android-specific Fastlane configuration
+# =======================================
+
+# Package name of your Android app
+package_name("com.example.mini_coding_challenges")
+
+# Path to the JSON key file for Google Play Console API
+json_key_file(ENV["GOOGLE_PLAY_JSON_KEY_PATH"])
+
+# Google Play Console service account email (alternative to JSON key)
+# service_account_email(ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL"])
+
+# For Firebase App Distribution
+firebase_app_id(ENV["FIREBASE_APP_ID_ANDROID"])

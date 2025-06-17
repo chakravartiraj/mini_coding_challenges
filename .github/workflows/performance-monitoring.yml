@@ -1,0 +1,443 @@
+name: 📊 Performance Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      performance_type:
+        description: 'Type of performance test'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - build-time
+          - app-size
+          - memory-usage
+
+env:
+  FLUTTER_VERSION: '3.16.0'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # =============================================================================
+  # BUILD PERFORMANCE ANALYSIS
+  # =============================================================================
+  build-performance:
+    name: 🏗️ Build Performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event.inputs.performance_type == 'all' || github.event.inputs.performance_type == 'build-time' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 📦 Install Dependencies
+        run: |
+          echo "⏱️ Starting dependency installation..."
+          start_time=$(date +%s)
+          flutter pub get
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          echo "📦 Dependencies installed in ${duration}s"
+          echo "dep_install_time=${duration}" >> $GITHUB_ENV
+      
+      - name: 🏗️ Build Performance Test (Android)
+        run: |
+          echo "⏱️ Starting Android build performance test..."
+          
+          # Clean build
+          flutter clean
+          
+          # First build (cold)
+          start_time=$(date +%s)
+          flutter build apk --release --verbose 2>&1 | tee build_log_cold.txt
+          end_time=$(date +%s)
+          cold_build_time=$((end_time - start_time))
+          echo "🥶 Cold build time: ${cold_build_time}s"
+          
+          # Incremental build (warm)
+          start_time=$(date +%s)
+          flutter build apk --release --verbose 2>&1 | tee build_log_warm.txt
+          end_time=$(date +%s)
+          warm_build_time=$((end_time - start_time))
+          echo "🔥 Warm build time: ${warm_build_time}s"
+          
+          # Save metrics
+          echo "cold_build_time=${cold_build_time}" >> $GITHUB_ENV
+          echo "warm_build_time=${warm_build_time}" >> $GITHUB_ENV
+      
+      - name: 🏗️ Build Performance Test (Web)
+        run: |
+          echo "⏱️ Starting Web build performance test..."
+          flutter config --enable-web
+          
+          start_time=$(date +%s)
+          flutter build web --release --verbose 2>&1 | tee build_log_web.txt
+          end_time=$(date +%s)
+          web_build_time=$((end_time - start_time))
+          echo "🌐 Web build time: ${web_build_time}s"
+          
+          echo "web_build_time=${web_build_time}" >> $GITHUB_ENV
+      
+      - name: 📊 Generate Build Performance Report
+        run: |
+          echo "# 🏗️ Build Performance Report" > build_performance.md
+          echo "" >> build_performance.md
+          echo "**Generated**: $(date -u)" >> build_performance.md
+          echo "**Commit**: ${{ github.sha }}" >> build_performance.md
+          echo "**Flutter Version**: ${{ env.FLUTTER_VERSION }}" >> build_performance.md
+          echo "" >> build_performance.md
+          echo "## ⏱️ Build Times" >> build_performance.md
+          echo "" >> build_performance.md
+          echo "| Build Type | Duration |" >> build_performance.md
+          echo "|------------|----------|" >> build_performance.md
+          echo "| Dependencies | ${dep_install_time}s |" >> build_performance.md
+          echo "| Android (Cold) | ${cold_build_time}s |" >> build_performance.md
+          echo "| Android (Warm) | ${warm_build_time}s |" >> build_performance.md
+          echo "| Web | ${web_build_time}s |" >> build_performance.md
+          echo "" >> build_performance.md
+          echo "## 📈 Performance Insights" >> build_performance.md
+          echo "" >> build_performance.md
+          
+          # Calculate insights
+          if [ $cold_build_time -lt 60 ]; then
+            echo "✅ **Cold build time is excellent** (under 1 minute)" >> build_performance.md
+          elif [ $cold_build_time -lt 120 ]; then
+            echo "✅ **Cold build time is good** (under 2 minutes)" >> build_performance.md
+          else
+            echo "⚠️ **Cold build time could be improved** (over 2 minutes)" >> build_performance.md
+          fi
+          
+          improvement_ratio=$((cold_build_time * 100 / warm_build_time))
+          echo "" >> build_performance.md
+          echo "**Incremental build improvement**: ${improvement_ratio}% faster than cold build" >> build_performance.md
+      
+      - name: 📤 Upload Build Performance Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-performance-report
+          path: |
+            build_performance.md
+            build_log_*.txt
+
+  # =============================================================================
+  # APP SIZE ANALYSIS
+  # =============================================================================
+  app-size-analysis:
+    name: 📏 App Size Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event.inputs.performance_type == 'all' || github.event.inputs.performance_type == 'app-size' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+      
+      - name: 📱 Android Size Analysis
+        run: |
+          echo "📱 Building Android for size analysis..."
+          
+          # Build release APK
+          flutter build apk --release --target-platform android-arm64
+          
+          # Build App Bundle
+          flutter build appbundle --release
+          
+          # Analyze sizes
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            apk_size=$(ls -l build/app/outputs/flutter-apk/app-release.apk | awk '{print $5}')
+            apk_size_mb=$(echo "scale=2; $apk_size / 1024 / 1024" | bc)
+            echo "📦 APK Size: ${apk_size_mb}MB"
+            echo "apk_size_mb=${apk_size_mb}" >> $GITHUB_ENV
+          fi
+          
+          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            aab_size=$(ls -l build/app/outputs/bundle/release/app-release.aab | awk '{print $5}')
+            aab_size_mb=$(echo "scale=2; $aab_size / 1024 / 1024" | bc)
+            echo "📦 AAB Size: ${aab_size_mb}MB"
+            echo "aab_size_mb=${aab_size_mb}" >> $GITHUB_ENV
+          fi
+      
+      - name: 🌐 Web Size Analysis
+        run: |
+          echo "🌐 Building Web for size analysis..."
+          flutter config --enable-web
+          flutter build web --release
+          
+          if [ -d "build/web" ]; then
+            web_size=$(du -sb build/web | awk '{print $1}')
+            web_size_mb=$(echo "scale=2; $web_size / 1024 / 1024" | bc)
+            echo "🌐 Web Build Size: ${web_size_mb}MB"
+            echo "web_size_mb=${web_size_mb}" >> $GITHUB_ENV
+            
+            # Analyze web assets
+            echo "" >> web_analysis.txt
+            echo "📊 Web Asset Breakdown:" >> web_analysis.txt
+            find build/web -type f -name "*.js" -exec ls -lh {} \; | sort -k5 -hr >> web_analysis.txt
+            echo "" >> web_analysis.txt
+            find build/web -type f -name "*.wasm" -exec ls -lh {} \; >> web_analysis.txt
+          fi
+      
+      - name: 📊 Generate Size Analysis Report
+        run: |
+          echo "# 📏 App Size Analysis Report" > size_analysis.md
+          echo "" >> size_analysis.md
+          echo "**Generated**: $(date -u)" >> size_analysis.md
+          echo "**Commit**: ${{ github.sha }}" >> size_analysis.md
+          echo "" >> size_analysis.md
+          echo "## 📦 Build Sizes" >> size_analysis.md
+          echo "" >> size_analysis.md
+          echo "| Platform | Format | Size |" >> size_analysis.md
+          echo "|----------|--------|------|" >> size_analysis.md
+          echo "| Android | APK | ${apk_size_mb:-N/A}MB |" >> size_analysis.md
+          echo "| Android | AAB | ${aab_size_mb:-N/A}MB |" >> size_analysis.md
+          echo "| Web | Build | ${web_size_mb:-N/A}MB |" >> size_analysis.md
+          echo "" >> size_analysis.md
+          
+          # Size recommendations
+          echo "## 📋 Size Recommendations" >> size_analysis.md
+          echo "" >> size_analysis.md
+          
+          if [ -n "${apk_size_mb}" ] && [ $(echo "${apk_size_mb} < 50" | bc) -eq 1 ]; then
+            echo "✅ **APK size is excellent** (under 50MB)" >> size_analysis.md
+          elif [ -n "${apk_size_mb}" ] && [ $(echo "${apk_size_mb} < 100" | bc) -eq 1 ]; then
+            echo "✅ **APK size is good** (under 100MB)" >> size_analysis.md
+          elif [ -n "${apk_size_mb}" ]; then
+            echo "⚠️ **APK size could be optimized** (over 100MB)" >> size_analysis.md
+            echo "Consider:" >> size_analysis.md
+            echo "- Removing unused dependencies" >> size_analysis.md
+            echo "- Using vector graphics instead of raster images" >> size_analysis.md
+            echo "- Enabling ProGuard/R8 obfuscation" >> size_analysis.md
+          fi
+          
+          if [ -f "web_analysis.txt" ]; then
+            echo "" >> size_analysis.md
+            echo "## 🌐 Web Asset Details" >> size_analysis.md
+            echo "" >> size_analysis.md
+            echo '```' >> size_analysis.md
+            cat web_analysis.txt >> size_analysis.md
+            echo '```' >> size_analysis.md
+          fi
+      
+      - name: 📤 Upload Size Analysis Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: size-analysis-report
+          path: |
+            size_analysis.md
+            web_analysis.txt
+
+  # =============================================================================
+  # MEMORY USAGE ANALYSIS
+  # =============================================================================
+  memory-analysis:
+    name: 🧠 Memory Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event.inputs.performance_type == 'all' || github.event.inputs.performance_type == 'memory-usage' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+      
+      - name: 🧠 Analyze Memory Usage Patterns
+        run: |
+          echo "🧠 Analyzing memory usage patterns..."
+          
+          # Check for potential memory leaks in code
+          echo "# 🧠 Memory Analysis Report" > memory_analysis.md
+          echo "" >> memory_analysis.md
+          echo "**Generated**: $(date -u)" >> memory_analysis.md
+          echo "**Commit**: ${{ github.sha }}" >> memory_analysis.md
+          echo "" >> memory_analysis.md
+          
+          # Scan for potential memory issues
+          echo "## 🔍 Potential Memory Issues" >> memory_analysis.md
+          echo "" >> memory_analysis.md
+          
+          # Check for stream controllers without dispose
+          stream_controllers=$(grep -r "StreamController" lib/ --include="*.dart" | wc -l || echo 0)
+          dispose_calls=$(grep -r "dispose()" lib/ --include="*.dart" | wc -l || echo 0)
+          
+          echo "- **StreamControllers found**: $stream_controllers" >> memory_analysis.md
+          echo "- **Dispose calls found**: $dispose_calls" >> memory_analysis.md
+          
+          if [ $stream_controllers -gt 0 ] && [ $dispose_calls -eq 0 ]; then
+            echo "⚠️ **Potential memory leak**: StreamControllers found but no dispose calls" >> memory_analysis.md
+          fi
+          
+          # Check for animation controllers
+          animation_controllers=$(grep -r "AnimationController" lib/ --include="*.dart" | wc -l || echo 0)
+          echo "- **AnimationControllers found**: $animation_controllers" >> memory_analysis.md
+          
+          # Check for timer usage
+          timers=$(grep -r "Timer\." lib/ --include="*.dart" | wc -l || echo 0)
+          echo "- **Timer usages found**: $timers" >> memory_analysis.md
+          
+          if [ $timers -gt 0 ]; then
+            echo "ℹ️ **Timer usage detected** - ensure proper cancellation" >> memory_analysis.md
+          fi
+          
+          echo "" >> memory_analysis.md
+          echo "## 📋 Memory Best Practices Check" >> memory_analysis.md
+          echo "" >> memory_analysis.md
+          
+          # Check for proper BLoC disposal
+          bloc_usage=$(grep -r "BlocProvider" lib/ --include="*.dart" | wc -l || echo 0)
+          echo "- **BLoC providers found**: $bloc_usage" >> memory_analysis.md
+          
+          # Check for image caching
+          image_usage=$(grep -r "Image\." lib/ --include="*.dart" | wc -l || echo 0)
+          cached_image_usage=$(grep -r "CachedNetworkImage\|Image.network" lib/ --include="*.dart" | wc -l || echo 0)
+          echo "- **Image widgets found**: $image_usage" >> memory_analysis.md
+          echo "- **Cached image usage**: $cached_image_usage" >> memory_analysis.md
+          
+          # Large list detection
+          listview_usage=$(grep -r "ListView\|GridView" lib/ --include="*.dart" | wc -l || echo 0)
+          builder_usage=$(grep -r "ListView.builder\|GridView.builder" lib/ --include="*.dart" | wc -l || echo 0)
+          echo "- **List/Grid views found**: $listview_usage" >> memory_analysis.md
+          echo "- **Builder pattern usage**: $builder_usage" >> memory_analysis.md
+          
+          if [ $listview_usage -gt 0 ] && [ $builder_usage -eq 0 ]; then
+            echo "⚠️ **Performance concern**: Consider using builder patterns for large lists" >> memory_analysis.md
+          fi
+      
+      - name: 🔬 Build Analysis Memory Impact
+        run: |
+          echo "" >> memory_analysis.md
+          echo "## 🏗️ Build Memory Analysis" >> memory_analysis.md
+          echo "" >> memory_analysis.md
+          
+          # Monitor memory during build
+          echo "Monitoring memory during build process..."
+          
+          # Get system memory info
+          total_mem=$(free -m | awk 'NR==2{print $2}')
+          echo "- **System total memory**: ${total_mem}MB" >> memory_analysis.md
+          
+          # Build and monitor
+          start_mem=$(free -m | awk 'NR==2{print $3}')
+          flutter build apk --debug
+          end_mem=$(free -m | awk 'NR==2{print $3}')
+          
+          build_mem_usage=$((end_mem - start_mem))
+          echo "- **Memory used during build**: ${build_mem_usage}MB" >> memory_analysis.md
+          
+          if [ $build_mem_usage -gt 2048 ]; then
+            echo "⚠️ **High memory usage during build** - consider build optimizations" >> memory_analysis.md
+          fi
+      
+      - name: 📤 Upload Memory Analysis Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: memory-analysis-report
+          path: memory_analysis.md
+
+  # =============================================================================
+  # PERFORMANCE DASHBOARD GENERATION
+  # =============================================================================
+  performance-dashboard:
+    name: 📈 Performance Dashboard
+    runs-on: ubuntu-latest
+    needs: [build-performance, app-size-analysis, memory-analysis]
+    if: always()
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Download All Reports
+        uses: actions/download-artifact@v3
+      
+      - name: 📊 Generate Combined Dashboard
+        run: |
+          echo "<!DOCTYPE html>" > performance_dashboard.html
+          echo "<html><head><title>Mini Coding Challenges - Performance Dashboard</title>" >> performance_dashboard.html
+          echo "<style>" >> performance_dashboard.html
+          echo "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; }" >> performance_dashboard.html
+          echo ".metric { background: #f6f8fa; padding: 20px; margin: 20px 0; border-radius: 8px; }" >> performance_dashboard.html
+          echo ".good { border-left: 4px solid #28a745; }" >> performance_dashboard.html
+          echo ".warning { border-left: 4px solid #ffc107; }" >> performance_dashboard.html
+          echo ".error { border-left: 4px solid #dc3545; }" >> performance_dashboard.html
+          echo "</style></head><body>" >> performance_dashboard.html
+          
+          echo "<h1>📊 Mini Coding Challenges - Performance Dashboard</h1>" >> performance_dashboard.html
+          echo "<p><strong>Generated:</strong> $(date -u)</p>" >> performance_dashboard.html
+          echo "<p><strong>Commit:</strong> <code>${{ github.sha }}</code></p>" >> performance_dashboard.html
+          
+          # Convert markdown reports to HTML sections
+          if [ -f "build-performance-report/build_performance.md" ]; then
+            echo "<div class='metric good'>" >> performance_dashboard.html
+            echo "<h2>🏗️ Build Performance</h2>" >> performance_dashboard.html
+            cat build-performance-report/build_performance.md | sed 's/^# //' | sed 's/^## /<h3>/' | sed 's/$/<\/h3>/' >> performance_dashboard.html
+            echo "</div>" >> performance_dashboard.html
+          fi
+          
+          if [ -f "size-analysis-report/size_analysis.md" ]; then
+            echo "<div class='metric good'>" >> performance_dashboard.html
+            echo "<h2>📏 App Size Analysis</h2>" >> performance_dashboard.html
+            cat size-analysis-report/size_analysis.md | sed 's/^# //' | sed 's/^## /<h3>/' | sed 's/$/<\/h3>/' >> performance_dashboard.html
+            echo "</div>" >> performance_dashboard.html
+          fi
+          
+          if [ -f "memory-analysis-report/memory_analysis.md" ]; then
+            echo "<div class='metric good'>" >> performance_dashboard.html
+            echo "<h2>🧠 Memory Analysis</h2>" >> performance_dashboard.html
+            cat memory-analysis-report/memory_analysis.md | sed 's/^# //' | sed 's/^## /<h3>/' | sed 's/$/<\/h3>/' >> performance_dashboard.html
+            echo "</div>" >> performance_dashboard.html
+          fi
+          
+          echo "<footer style='margin-top: 40px; padding-top: 20px; border-top: 1px solid #e1e4e8;'>" >> performance_dashboard.html
+          echo "<p>🤖 Generated automatically by GitHub Actions</p>" >> performance_dashboard.html
+          echo "</footer></body></html>" >> performance_dashboard.html
+      
+      - name: 📤 Upload Performance Dashboard
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-dashboard
+          path: performance_dashboard.html
+      
+      - name: 📋 Performance Summary
+        run: |
+          echo "## 📊 Performance Monitoring Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Reports Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏗️ Build Performance Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- 📏 App Size Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧠 Memory Usage Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Combined Performance Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "All performance reports are available in the workflow artifacts." >> $GITHUB_STEP_SUMMARY

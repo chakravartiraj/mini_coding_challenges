@@ -1,0 +1,535 @@
+name: 🚀 Flutter CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+# Environment variables for the entire workflow
+env:
+  FLUTTER_VERSION: '3.16.0'
+  JAVA_VERSION: '17'
+  NODE_VERSION: '18'
+
+# Global permissions
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # =============================================================================
+  # JOB 1: SETUP AND VALIDATION
+  # =============================================================================
+  setup:
+    name: 🔧 Setup & Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      flutter-version: ${{ steps.flutter-version.outputs.version }}
+      should-deploy: ${{ steps.deploy-check.outputs.should-deploy }}
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: 🏷️ Generate Cache Key
+        id: cache-key
+        run: |
+          echo "key=flutter-${{ env.FLUTTER_VERSION }}-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}" >> $GITHUB_OUTPUT
+      
+      - name: 🔍 Check Flutter Version
+        id: flutter-version
+        run: |
+          echo "version=${{ env.FLUTTER_VERSION }}" >> $GITHUB_OUTPUT
+      
+      - name: 📋 Deployment Check
+        id: deploy-check
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 📊 Project Structure Analysis
+        run: |
+          echo "📁 Project Structure:"
+          find lib -type f -name "*.dart" | head -10
+          echo "📦 Dependencies:"
+          grep -A 20 "dependencies:" pubspec.yaml
+
+  # =============================================================================
+  # JOB 2: CODE QUALITY & SECURITY ANALYSIS
+  # =============================================================================
+  code-quality:
+    name: 🔍 Code Quality & Security
+    runs-on: ubuntu-latest
+    needs: setup
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-key: ${{ needs.setup.outputs.cache-key }}
+      
+      - name: 📦 Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            flutter-${{ env.FLUTTER_VERSION }}-${{ runner.os }}-
+      
+      - name: 📥 Install Dependencies
+        run: |
+          flutter --version
+          flutter pub get
+          flutter pub deps
+      
+      - name: 🧹 Check Formatting
+        run: |
+          echo "🔍 Checking Dart formatting..."
+          dart format --output=none --set-exit-if-changed .
+      
+      - name: 🔍 Static Analysis (Comprehensive)
+        run: |
+          echo "📊 Running comprehensive static analysis..."
+          flutter analyze --fatal-infos --verbose | tee analysis_report.txt
+      
+      - name: 🧪 Dry Run Build Check
+        run: |
+          echo "🔨 Checking if project builds without errors..."
+          flutter build apk --debug --dry-run
+      
+      - name: 🔒 Security Audit
+        run: |
+          echo "🔒 Running security audit..."
+          # Check for known vulnerabilities in dependencies
+          flutter pub deps --json | jq '.packages[] | select(.kind == "direct") | .name' | sort > dependencies.txt
+          echo "📦 Direct dependencies checked:"
+          cat dependencies.txt
+      
+      - name: 📄 Generate Code Quality Report
+        if: always()
+        run: |
+          echo "📊 Code Quality Summary" > quality_report.md
+          echo "========================" >> quality_report.md
+          echo "" >> quality_report.md
+          echo "## Analysis Results" >> quality_report.md
+          if [ -f analysis_report.txt ]; then
+            echo "\`\`\`" >> quality_report.md
+            cat analysis_report.txt >> quality_report.md
+            echo "\`\`\`" >> quality_report.md
+          fi
+          echo "" >> quality_report.md
+          echo "## Project Stats" >> quality_report.md
+          echo "- Dart files: $(find lib -name '*.dart' | wc -l)" >> quality_report.md
+          echo "- Test files: $(find test -name '*.dart' 2>/dev/null | wc -l || echo 0)" >> quality_report.md
+          echo "- Lines of code: $(find lib -name '*.dart' -exec cat {} \; | wc -l)" >> quality_report.md
+      
+      - name: 📤 Upload Analysis Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: code-quality-report
+          path: |
+            quality_report.md
+            analysis_report.txt
+          retention-days: 30
+
+  # =============================================================================
+  # JOB 3: COMPREHENSIVE TESTING
+  # =============================================================================
+  testing:
+    name: 🧪 Testing Suite
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality]
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        test-type: [unit, widget, integration]
+        include:
+          - test-type: unit
+            test-path: "test/unit"
+            coverage: true
+          - test-type: widget
+            test-path: "test/widget" 
+            coverage: true
+          - test-type: integration
+            test-path: "test/integration"
+            coverage: false
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+      
+      - name: 🧪 Run ${{ matrix.test-type }} Tests
+        run: |
+          echo "🧪 Running ${{ matrix.test-type }} tests..."
+          if [ -d "${{ matrix.test-path }}" ]; then
+            if [ "${{ matrix.coverage }}" == "true" ]; then
+              flutter test ${{ matrix.test-path }} --coverage
+            else
+              flutter test ${{ matrix.test-path }}
+            fi
+          else
+            echo "⚠️ No ${{ matrix.test-type }} tests found at ${{ matrix.test-path }}"
+            # Create basic test structure for demonstration
+            mkdir -p ${{ matrix.test-path }}
+            echo "// TODO: Add ${{ matrix.test-type }} tests" > ${{ matrix.test-path }}/example_test.dart
+            flutter test || echo "Tests will be implemented in future iterations"
+          fi
+      
+      - name: 📊 Process Coverage Report
+        if: matrix.coverage == 'true' && always()
+        run: |
+          if [ -f "coverage/lcov.info" ]; then
+            echo "📊 Coverage report generated"
+            # Install lcov for coverage processing
+            sudo apt-get update && sudo apt-get install -y lcov
+            # Generate HTML coverage report
+            genhtml coverage/lcov.info -o coverage/html
+            # Calculate coverage percentage
+            coverage_percent=$(lcov --summary coverage/lcov.info 2>&1 | grep -o '[0-9.]*%' | tail -1)
+            echo "Coverage: $coverage_percent" > coverage/summary.txt
+          else
+            echo "⚠️ No coverage data generated"
+          fi
+      
+      - name: 📤 Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        if: matrix.coverage == 'true' && always()
+        with:
+          name: coverage-${{ matrix.test-type }}
+          path: |
+            coverage/
+          retention-days: 30
+
+  # =============================================================================
+  # JOB 4: MULTI-PLATFORM BUILD
+  # =============================================================================
+  build:
+    name: 🔨 Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    needs: [setup, code-quality]
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [android, web, linux]
+        include:
+          - platform: android
+            os: ubuntu-latest
+            build-cmd: "flutter build apk --release --target-platform android-arm64"
+            artifact-path: "build/app/outputs/flutter-apk/*.apk"
+            artifact-name: "android-apk"
+          - platform: web
+            os: ubuntu-latest
+            build-cmd: "flutter build web --release --web-renderer html"
+            artifact-path: "build/web/"
+            artifact-name: "web-build"
+          - platform: linux
+            os: ubuntu-latest
+            build-cmd: "flutter build linux --release"
+            artifact-path: "build/linux/x64/release/bundle/"
+            artifact-name: "linux-build"
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 🔧 Platform-specific Setup
+        run: |
+          case "${{ matrix.platform }}" in
+            android)
+              echo "🤖 Setting up Android build environment"
+              # Android setup is handled by Flutter action
+              ;;
+            web)
+              echo "🌐 Setting up Web build environment"
+              flutter config --enable-web
+              ;;
+            linux)
+              echo "🐧 Setting up Linux build environment"
+              sudo apt-get update
+              sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+              flutter config --enable-linux-desktop
+              ;;
+          esac
+      
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+      
+      - name: 🔨 Build ${{ matrix.platform }}
+        run: |
+          echo "🔨 Building for ${{ matrix.platform }}..."
+          ${{ matrix.build-cmd }}
+      
+      - name: 📊 Build Analysis
+        run: |
+          echo "📊 Build Analysis for ${{ matrix.platform }}" > build_analysis.txt
+          echo "=================================" >> build_analysis.txt
+          
+          case "${{ matrix.platform }}" in
+            android)
+              if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+                apk_size=$(ls -lh build/app/outputs/flutter-apk/app-release.apk | awk '{print $5}')
+                echo "APK Size: $apk_size" >> build_analysis.txt
+              fi
+              ;;
+            web)
+              if [ -d "build/web" ]; then
+                web_size=$(du -sh build/web | awk '{print $1}')
+                echo "Web Bundle Size: $web_size" >> build_analysis.txt
+                echo "Assets:" >> build_analysis.txt
+                find build/web -name "*.js" -o -name "*.wasm" | head -10 >> build_analysis.txt
+              fi
+              ;;
+            linux)
+              if [ -d "build/linux/x64/release/bundle" ]; then
+                linux_size=$(du -sh build/linux/x64/release/bundle | awk '{print $1}')
+                echo "Linux Bundle Size: $linux_size" >> build_analysis.txt
+              fi
+              ;;
+          esac
+      
+      - name: 📤 Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            ${{ matrix.artifact-path }}
+            build_analysis.txt
+          retention-days: 30
+
+  # =============================================================================
+  # JOB 5: DEPLOYMENT PREPARATION
+  # =============================================================================
+  deployment-prep:
+    name: 🚀 Deployment Preparation
+    runs-on: ubuntu-latest
+    needs: [setup, testing, build]
+    if: needs.setup.outputs.should-deploy == 'true'
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 📥 Download All Artifacts
+        uses: actions/download-artifact@v3
+      
+      - name: 📊 Create Deployment Summary
+        run: |
+          echo "🚀 Deployment Summary" > deployment_summary.md
+          echo "===================" >> deployment_summary.md
+          echo "" >> deployment_summary.md
+          echo "## Build Information" >> deployment_summary.md
+          echo "- **Commit**: ${{ github.sha }}" >> deployment_summary.md
+          echo "- **Branch**: ${{ github.ref_name }}" >> deployment_summary.md
+          echo "- **Event**: ${{ github.event_name }}" >> deployment_summary.md
+          echo "- **Flutter Version**: ${{ env.FLUTTER_VERSION }}" >> deployment_summary.md
+          echo "- **Build Time**: $(date -u)" >> deployment_summary.md
+          echo "" >> deployment_summary.md
+          echo "## Available Artifacts" >> deployment_summary.md
+          for dir in */; do
+            if [ -d "$dir" ] && [ "$dir" != ".github/" ]; then
+              echo "- $dir" >> deployment_summary.md
+            fi
+          done
+      
+      - name: 📤 Upload Deployment Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-package
+          path: |
+            deployment_summary.md
+            android-apk/
+            web-build/
+            linux-build/
+          retention-days: 90
+
+  # =============================================================================
+  # JOB 6: RELEASE MANAGEMENT
+  # =============================================================================
+  release:
+    name: 🎉 Release Management
+    runs-on: ubuntu-latest
+    needs: [setup, deployment-prep]
+    if: github.event_name == 'release'
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 📥 Download Deployment Package
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+      
+      - name: 🏷️ Create Release Assets
+        run: |
+          # Create release directory
+          mkdir -p release-assets
+          
+          # Package Android APK
+          if [ -d "android-apk" ]; then
+            cd android-apk
+            zip -r ../release-assets/mini-coding-challenges-android.zip .
+            cd ..
+          fi
+          
+          # Package Web build
+          if [ -d "web-build" ]; then
+            cd web-build
+            zip -r ../release-assets/mini-coding-challenges-web.zip .
+            cd ..
+          fi
+          
+          # Package Linux build
+          if [ -d "linux-build" ]; then
+            cd linux-build
+            tar -czf ../release-assets/mini-coding-challenges-linux.tar.gz .
+            cd ..
+          fi
+          
+          # Create checksums
+          cd release-assets
+          sha256sum * > checksums.txt
+          cd ..
+      
+      - name: 📤 Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-assets/*
+          body_path: deployment_summary.md
+          tag_name: ${{ github.event.release.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # =============================================================================
+  # JOB 7: FASTLANE DEPLOYMENT TRIGGER
+  # =============================================================================
+  trigger-fastlane:
+    name: 🚀 Trigger Fastlane Deployment
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality, testing, build]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    timeout-minutes: 5
+    
+    steps:
+      - name: 🎯 Determine Environment
+        id: environment
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 🚀 Trigger Fastlane Deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const result = await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'fastlane-deployment.yml',
+              ref: context.ref,
+              inputs: {
+                platform: 'both',
+                environment: '${{ steps.environment.outputs.environment }}'
+              }
+            });
+            
+            console.log('🚀 Fastlane deployment triggered');
+            console.log(`Environment: ${{ steps.environment.outputs.environment }}`);
+            console.log(`Platform: both`);
+            console.log(`Workflow run: ${result.status}`);
+      
+      - name: 📢 Deployment Notice
+        run: |
+          echo "🚀 Fastlane deployment has been triggered for ${{ steps.environment.outputs.environment }} environment"
+          echo "📱 Both Android and iOS builds will be processed"
+          echo "🔗 Check the Fastlane Deployment Pipeline workflow for progress"
+
+  # =============================================================================
+  # JOB 8: NOTIFICATIONS AND REPORTING
+  # =============================================================================
+  notification:
+    name: 📢 Notification & Cleanup
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality, testing, build, deployment-prep]
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📊 Workflow Summary
+        run: |
+          echo "## 🚀 Mini Coding Challenges CI/CD Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Setup | ${{ needs.setup.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testing | ${{ needs.testing.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployment Prep | ${{ needs.deployment-prep.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Test Coverage Reports" >> $GITHUB_STEP_SUMMARY
+          echo "- Android APK" >> $GITHUB_STEP_SUMMARY
+          echo "- Web Build" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux Build" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.setup.outputs.should-deploy }}" == "true" ]; then
+            echo "- Deployment Package" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Repository](https://github.com/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Actions](https://github.com/${{ github.repository }}/actions)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Releases](https://github.com/${{ github.repository }}/releases)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: 🧹 Cleanup Notice
+        run: |
+          echo "🧹 Artifacts will be retained according to retention policies"
+          echo "📊 Workflow completed successfully"

@@ -1,0 +1,62 @@
+# Gymfile for iOS Build Configuration
+# ===================================
+# 
+# This file configures the `gym` action for building iOS apps.
+
+# Workspace to build
+workspace("Runner.xcworkspace")
+
+# Scheme to build
+scheme("Runner")
+
+# Build configuration
+configuration("Release")
+
+# Export method (app-store, ad-hoc, development, enterprise)
+export_method("app-store")
+
+# Output directory
+output_directory("../build/ios")
+
+# Output name
+output_name("app-release")
+
+# Clean before building
+clean(true)
+
+# Archive path
+archive_path("../build/ios/Runner.xcarchive")
+
+# Build path
+build_path("../build/ios")
+
+# Derived data path
+derived_data_path("../build/ios/DerivedData")
+
+# Export options
+export_options({
+  method: "app-store",
+  provisioningProfiles: {
+    "com.example.miniCodingChallenges" => "match AppStore com.example.miniCodingChallenges"
+  },
+  signingStyle: "manual",
+  stripSwiftSymbols: true,
+  uploadBitcode: false,
+  uploadSymbols: true,
+  compileBitcode: false
+})
+
+# Suppress Xcode output
+suppress_xcode_output(false)
+
+# Build timings
+buildlog_path("../build/ios/gym")
+
+# Code signing identity
+codesigning_identity("iPhone Distribution")
+
+# Skip package dependencies resolution
+skip_package_dependencies_resolution(false)
+
+# Disable package automatic updates
+disable_package_automatic_updates(true)

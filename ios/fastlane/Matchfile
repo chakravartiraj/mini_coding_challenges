@@ -1,0 +1,43 @@
+# Matchfile for iOS Code Signing
+# ==============================
+# 
+# This file configures the `match` action for automated code signing.
+# Match stores your certificates and provisioning profiles in a git repository
+# to sync them across machines and CI/CD systems.
+
+# Git repository URL for storing certificates and profiles
+git_url(ENV["MATCH_GIT_URL"])
+
+# Storage mode (git, google_cloud, s3, or gitlab_secure_files)
+storage_mode("git")
+
+# App identifier(s) to manage
+app_identifier(["com.example.miniCodingChallenges"])
+
+# Team ID for Apple Developer Program
+team_id(ENV["APPLE_TEAM_ID"])
+
+# Username for Apple Developer Portal
+username(ENV["APPLE_ID"])
+
+# Branch to use in the git repository (default: master)
+git_branch("main")
+
+# Shallow clone for faster checkout
+shallow_clone(true)
+
+# Clone branch directly
+clone_branch_directly(true)
+
+# Force overwrite existing certificates
+force_for_new_devices(true)
+
+# Skip confirmation prompts in CI
+skip_confirmation(true)
+
+# Keychain configuration for CI
+keychain_name("match_keychain")
+keychain_password(ENV["MATCH_KEYCHAIN_PASSWORD"])
+
+# Verbose logging
+verbose(true)
