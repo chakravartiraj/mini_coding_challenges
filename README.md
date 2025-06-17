@@ -43,7 +43,11 @@ flutter pub get
 flutter test
 ```
 
-📖 **Detailed CI/CD Documentation**: See [CI/CD Implementation Summary](CI_CD_IMPLEMENTATION_SUMMARY.md)
+📖 **Comprehensive Documentation**: See [Documentation Hub](./docs/README.md) for complete guides
+
+📊 **Project Status**: Check [Current Status Report](./docs/reports/PROJECT_STATUS.md)
+
+🔧 **Setup Guides**: Visit [Setup Documentation](./docs/setup/README.md)
 
 ## 🏗️ Architecture
 
