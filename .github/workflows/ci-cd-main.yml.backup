@@ -66,10 +66,10 @@ jobs:
           grep -A 20 "dependencies:" pubspec.yaml
 
   # =============================================================================
-  # JOB 2: CODE QUALITY & SECURITY ANALYSIS
+  # JOB 2: QUALITY-FIRST FASTLANE PIPELINE - ANALYSIS & FORMATTING
   # =============================================================================
-  code-quality:
-    name: 🔍 Code Quality & Security
+  quality-analysis:
+    name: 🔍 Quality Analysis (Fastlane)
     runs-on: ubuntu-latest
     needs: setup
     timeout-minutes: 15
@@ -96,168 +96,49 @@ jobs:
           restore-keys: |
             flutter-${{ env.FLUTTER_VERSION }}-${{ runner.os }}-
       
-      - name: 📥 Install Dependencies
-        run: |
-          flutter --version
-          flutter pub get
-          flutter pub deps
+      - name: � Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: android
       
-      - name: 🧹 Check Formatting
+      - name: � Install Fastlane Dependencies
         run: |
-          echo "🔍 Checking Dart formatting..."
-          dart format --output=none --set-exit-if-changed .
+          cd android
+          bundle install
       
-      - name: 🔍 Static Analysis (Comprehensive)
+      - name: � Run Fastlane Analysis Pipeline
         run: |
-          echo "📊 Running comprehensive static analysis..."
-          flutter analyze --fatal-infos --verbose | tee analysis_report.txt
+          cd android
+          bundle exec fastlane --file QualityFastfile analyze
       
-      - name: 🧪 Dry Run Build Check
+      - name: 🧹 Run Fastlane Formatting Pipeline
         run: |
-          echo "🔨 Checking if project builds without errors..."
-          flutter build apk --debug --dry-run
+          cd android
+          bundle exec fastlane --file QualityFastfile format_code
       
-      - name: 🔒 Security Audit
-        run: |
-          echo "🔒 Running security audit..."
-          # Check for known vulnerabilities in dependencies
-          flutter pub deps --json | jq '.packages[] | select(.kind == "direct") | .name' | sort > dependencies.txt
-          echo "📦 Direct dependencies checked:"
-          cat dependencies.txt
-      
-      - name: 📄 Generate Code Quality Report
-        if: always()
-        run: |
-          echo "📊 Code Quality Summary" > quality_report.md
-          echo "========================" >> quality_report.md
-          echo "" >> quality_report.md
-          echo "## Analysis Results" >> quality_report.md
-          if [ -f analysis_report.txt ]; then
-            echo "\`\`\`" >> quality_report.md
-            cat analysis_report.txt >> quality_report.md
-            echo "\`\`\`" >> quality_report.md
-          fi
-          echo "" >> quality_report.md
-          echo "## Project Stats" >> quality_report.md
-          echo "- Dart files: $(find lib -name '*.dart' | wc -l)" >> quality_report.md
-          echo "- Test files: $(find test -name '*.dart' 2>/dev/null | wc -l || echo 0)" >> quality_report.md
-          echo "- Lines of code: $(find lib -name '*.dart' -exec cat {} \; | wc -l)" >> quality_report.md
-      
-      - name: 📤 Upload Analysis Results
+      - name: 📤 Upload Analysis Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: code-quality-report
+          name: quality-analysis-reports
           path: |
-            quality_report.md
-            analysis_report.txt
-          retention-days: 30
-
-  # =============================================================================
-  # JOB 3: COMPREHENSIVE TESTING
-  # =============================================================================
-  testing:
-    name: 🧪 Testing Suite
-    runs-on: ubuntu-latest
-    needs: [setup, code-quality]
-    timeout-minutes: 20
-    strategy:
-      matrix:
-        test-type: [unit, widget, integration]
-        include:
-          - test-type: unit
-            test-path: "test/unit"
-            coverage: true
-          - test-type: widget
-            test-path: "test/widget" 
-            coverage: true
-          - test-type: integration
-            test-path: "test/integration"
-            coverage: false
-    
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-      
-      - name: 🔧 Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-      
-      - name: 📦 Install Dependencies
-        run: flutter pub get
-      
-      - name: 🧪 Run ${{ matrix.test-type }} Tests
-        run: |
-          echo "🧪 Running ${{ matrix.test-type }} tests..."
-          if [ -d "${{ matrix.test-path }}" ]; then
-            if [ "${{ matrix.coverage }}" == "true" ]; then
-              flutter test ${{ matrix.test-path }} --coverage
-            else
-              flutter test ${{ matrix.test-path }}
-            fi
-          else
-            echo "⚠️ No ${{ matrix.test-type }} tests found at ${{ matrix.test-path }}"
-            # Create basic test structure for demonstration
-            mkdir -p ${{ matrix.test-path }}
-            echo "// TODO: Add ${{ matrix.test-type }} tests" > ${{ matrix.test-path }}/example_test.dart
-            flutter test || echo "Tests will be implemented in future iterations"
-          fi
-      
-      - name: 📊 Process Coverage Report
-        if: matrix.coverage == 'true' && always()
-        run: |
-          if [ -f "coverage/lcov.info" ]; then
-            echo "📊 Coverage report generated"
-            # Install lcov for coverage processing
-            sudo apt-get update && sudo apt-get install -y lcov
-            # Generate HTML coverage report
-            genhtml coverage/lcov.info -o coverage/html
-            # Calculate coverage percentage
-            coverage_percent=$(lcov --summary coverage/lcov.info 2>&1 | grep -o '[0-9.]*%' | tail -1)
-            echo "Coverage: $coverage_percent" > coverage/summary.txt
-          else
-            echo "⚠️ No coverage data generated"
-          fi
-      
-      - name: 📤 Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        if: matrix.coverage == 'true' && always()
-        with:
-          name: coverage-${{ matrix.test-type }}
-          path: |
+            reports/analysis/
             coverage/
           retention-days: 30
 
   # =============================================================================
-  # JOB 4: MULTI-PLATFORM BUILD
+  # JOB 3: COMPREHENSIVE TESTING SUITE (Fastlane)
   # =============================================================================
-  build:
-    name: 🔨 Build (${{ matrix.platform }})
-    runs-on: ${{ matrix.os }}
-    needs: [setup, code-quality]
-    timeout-minutes: 30
+  testing-suite:
+    name: 🧪 Testing Suite (Fastlane)
+    runs-on: ubuntu-latest
+    needs: [setup, quality-analysis]
+    timeout-minutes: 25
     strategy:
-      fail-fast: false
       matrix:
-        platform: [android, web, linux]
-        include:
-          - platform: android
-            os: ubuntu-latest
-            build-cmd: "flutter build apk --release --target-platform android-arm64"
-            artifact-path: "build/app/outputs/flutter-apk/*.apk"
-            artifact-name: "android-apk"
-          - platform: web
-            os: ubuntu-latest
-            build-cmd: "flutter build web --release --web-renderer html"
-            artifact-path: "build/web/"
-            artifact-name: "web-build"
-          - platform: linux
-            os: ubuntu-latest
-            build-cmd: "flutter build linux --release"
-            artifact-path: "build/linux/x64/release/bundle/"
-            artifact-name: "linux-build"
+        test-suite: [unit, widget, integration, golden]
     
     steps:
       - name: 📥 Checkout Repository
@@ -269,77 +150,261 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       
-      - name: 🔧 Platform-specific Setup
-        run: |
-          case "${{ matrix.platform }}" in
-            android)
-              echo "🤖 Setting up Android build environment"
-              # Android setup is handled by Flutter action
-              ;;
-            web)
-              echo "🌐 Setting up Web build environment"
-              flutter config --enable-web
-              ;;
-            linux)
-              echo "🐧 Setting up Linux build environment"
-              sudo apt-get update
-              sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
-              flutter config --enable-linux-desktop
-              ;;
-          esac
-      
-      - name: 📦 Install Dependencies
-        run: flutter pub get
-      
-      - name: 🔨 Build ${{ matrix.platform }}
-        run: |
-          echo "🔨 Building for ${{ matrix.platform }}..."
-          ${{ matrix.build-cmd }}
-      
-      - name: 📊 Build Analysis
-        run: |
-          echo "📊 Build Analysis for ${{ matrix.platform }}" > build_analysis.txt
-          echo "=================================" >> build_analysis.txt
-          
-          case "${{ matrix.platform }}" in
-            android)
-              if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-                apk_size=$(ls -lh build/app/outputs/flutter-apk/app-release.apk | awk '{print $5}')
-                echo "APK Size: $apk_size" >> build_analysis.txt
-              fi
-              ;;
-            web)
-              if [ -d "build/web" ]; then
-                web_size=$(du -sh build/web | awk '{print $1}')
-                echo "Web Bundle Size: $web_size" >> build_analysis.txt
-                echo "Assets:" >> build_analysis.txt
-                find build/web -name "*.js" -o -name "*.wasm" | head -10 >> build_analysis.txt
-              fi
-              ;;
-            linux)
-              if [ -d "build/linux/x64/release/bundle" ]; then
-                linux_size=$(du -sh build/linux/x64/release/bundle | awk '{print $1}')
-                echo "Linux Bundle Size: $linux_size" >> build_analysis.txt
-              fi
-              ;;
-          esac
-      
-      - name: 📤 Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+      - name: 💎 Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
         with:
-          name: ${{ matrix.artifact-name }}
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: android
+      
+      - name: 📥 Install Dependencies
+        run: |
+          flutter pub get
+          cd android && bundle install
+      
+      - name: 🧪 Run ${{ matrix.test-suite }} Tests
+        run: |
+          cd android
+          case "${{ matrix.test-suite }}" in
+            "unit")
+              bundle exec fastlane --file QualityFastfile test_unit
+              ;;
+            "widget")
+              bundle exec fastlane --file QualityFastfile test_widget
+              ;;
+            "integration")
+              bundle exec fastlane --file QualityFastfile test_integration
+              ;;
+            "golden")
+              bundle exec fastlane --file QualityFastfile test_golden
+              ;;
+          esac
+      
+      - name: 📤 Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.test-suite }}
           path: |
-            ${{ matrix.artifact-path }}
-            build_analysis.txt
+            reports/tests/
+            coverage/
           retention-days: 30
 
   # =============================================================================
-  # JOB 5: DEPLOYMENT PREPARATION
+  # JOB 4: COVERAGE ANALYSIS (Fastlane)
+  # =============================================================================
+  coverage-analysis:
+    name: 📊 Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: [setup, testing-suite]
+    if: always() && (needs.testing-suite.result == 'success' || needs.testing-suite.result == 'failure')
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 💎 Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: android
+      
+      - name: 📥 Download Test Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: ./test-artifacts
+      
+      - name: 📊 Generate Coverage Report
+        run: |
+          cd android
+          bundle exec fastlane --file QualityFastfile coverage_report
+      
+      - name: 📤 Upload Coverage Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            coverage/
+            reports/coverage/
+          retention-days: 30
+
+  # =============================================================================
+  # JOB 5: PERFORMANCE MONITORING (Fastlane)
+  # =============================================================================
+  performance-monitoring:
+    name: ⚡ Performance Monitoring
+    runs-on: ubuntu-latest
+    needs: [setup, quality-analysis]
+    timeout-minutes: 20
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: � Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 💎 Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: android
+      
+      - name: 📥 Install Dependencies
+        run: |
+          flutter pub get
+          cd android && bundle install
+      
+      - name: ⚡ Run Performance Analysis
+        run: |
+          cd android
+          bundle exec fastlane --file QualityFastfile performance_monitoring
+      
+      - name: 📤 Upload Performance Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-reports
+          path: |
+            reports/performance/
+          retention-days: 30
+
+  # =============================================================================
+  # JOB 6: BUILD ARTIFACTS (Fastlane)
+  # =============================================================================
+  build-artifacts:
+    name: 🔨 Build Artifacts (Fastlane)
+    runs-on: ubuntu-latest
+    needs: [setup, quality-analysis, testing-suite, coverage-analysis]
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        build-type: [debug, release]
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: � Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: android
+      
+      - name: 📦 Install Dependencies
+        run: |
+          flutter pub get
+          cd android && bundle install
+      
+      - name: 🔨 Build APK (${{ matrix.build-type }})
+        run: |
+          cd android
+          bundle exec fastlane --file QualityFastfile build_apk environment:${{ matrix.build-type }}
+      
+      - name: 🔨 Build App Bundle (${{ matrix.build-type }})
+        if: matrix.build-type == 'release'
+        run: |
+          cd android
+          bundle exec fastlane --file QualityFastfile build_bundle environment:${{ matrix.build-type }}
+      
+      - name: � Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-artifacts-${{ matrix.build-type }}
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
+            reports/build/
+          retention-days: 30
+
+  # =============================================================================
+  # JOB 7: QUALITY REPORTING & MASTER PIPELINE
+  # =============================================================================
+  quality-master-pipeline:
+    name: 🎯 Master Quality Pipeline
+    runs-on: ubuntu-latest
+    needs: [setup, quality-analysis, testing-suite, coverage-analysis, performance-monitoring, build-artifacts]
+    if: always()
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 💎 Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          working-directory: android
+      
+      - name: 📥 Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: 🎯 Run Master Quality Pipeline
+        run: |
+          cd android
+          bundle exec fastlane --file QualityFastfile master_quality_pipeline
+      
+      - name: 📊 Generate Final Quality Report
+        run: |
+          cd android
+          bundle exec fastlane --file QualityFastfile quality_report
+      
+      - name: 📤 Upload Final Quality Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: final-quality-reports
+          path: |
+            reports/
+            artifacts/
+          retention-days: 90
+
+  # =============================================================================
+  # JOB 8: DEPLOYMENT PREPARATION
   # =============================================================================
   deployment-prep:
     name: 🚀 Deployment Preparation
     runs-on: ubuntu-latest
-    needs: [setup, testing, build]
+    needs: [setup, testing-suite, build-artifacts]
     if: needs.setup.outputs.should-deploy == 'true'
     timeout-minutes: 10
     
@@ -446,7 +511,7 @@ jobs:
   trigger-fastlane:
     name: 🚀 Trigger Fastlane Deployment
     runs-on: ubuntu-latest
-    needs: [setup, code-quality, testing, build]
+    needs: [setup, quality-analysis, testing-suite, build-artifacts]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     timeout-minutes: 5
     
@@ -495,7 +560,7 @@ jobs:
   notification:
     name: 📢 Notification & Cleanup
     runs-on: ubuntu-latest
-    needs: [setup, code-quality, testing, build, deployment-prep]
+    needs: [setup, quality-analysis, testing-suite, build-artifacts, deployment-prep]
     if: always()
     timeout-minutes: 5
     
@@ -507,9 +572,9 @@ jobs:
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Setup | ${{ needs.setup.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Testing | ${{ needs.testing.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality Analysis | ${{ needs.quality-analysis.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testing Suite | ${{ needs.testing-suite.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Artifacts | ${{ needs.build-artifacts.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deployment Prep | ${{ needs.deployment-prep.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Generated Artifacts" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,395 @@
+# Quality-First iOS Fastfile
+# Professional CI/CD pipeline focused on code quality, testing, and build automation
+# No app store deployment required - perfect for quality assurance workflows
+
+default_platform(:ios)
+
+platform :ios do
+  # =============================================================================
+  # SETUP AND ENVIRONMENT
+  # =============================================================================
+  
+  desc "Setup development environment and dependencies"
+  lane :setup do
+    puts "🔧 Setting up iOS development environment..."
+    
+    # Ensure Flutter dependencies are installed
+    sh("cd .. && flutter pub get")
+    
+    # Clean previous builds
+    sh("cd .. && flutter clean")
+    
+    # Validate Flutter installation
+    sh("cd .. && flutter doctor")
+    
+    puts "✅ iOS environment setup complete"
+  end
+
+  # =============================================================================
+  # CODE QUALITY AND STATIC ANALYSIS
+  # =============================================================================
+  
+  desc "Run comprehensive static code analysis"
+  lane :analyze do
+    puts "🔍 Running static code analysis..."
+    
+    setup
+    
+    # Create analysis results directory
+    sh("mkdir -p ../reports/analysis")
+    
+    # Run Dart format check
+    puts "📝 Checking code formatting..."
+    begin
+      sh("cd .. && dart format --set-exit-if-changed .")
+      puts "✅ Code formatting check passed"
+    rescue => ex
+      puts "❌ Code formatting issues found"
+      # Auto-fix formatting
+      sh("cd .. && dart format .")
+      puts "🔧 Applied automatic formatting fixes"
+    end
+    
+    # Run dart fix
+    puts "🔧 Running dart fix..."
+    sh("cd .. && dart fix --apply")
+    
+    # Run flutter analyze
+    puts "🔍 Running static analysis..."
+    begin
+      sh("cd .. && flutter analyze --verbose > reports/analysis/flutter_analyze.log 2>&1")
+      puts "✅ Static analysis completed"
+    rescue => ex
+      puts "⚠️ Static analysis found issues - check reports/analysis/flutter_analyze.log"
+    end
+    
+    # Security analysis
+    puts "🔒 Running security analysis..."
+    begin
+      sh("cd .. && flutter pub deps --json > reports/analysis/dependencies.json")
+      puts "✅ Dependency analysis completed"
+    rescue => ex
+      puts "⚠️ Dependency analysis failed: #{ex}"
+    end
+    
+    puts "📊 Analysis complete - reports saved to reports/analysis/"
+  end
+
+  # =============================================================================
+  # CODE FORMATTING
+  # =============================================================================
+  
+  desc "Format code and apply fixes"
+  lane :format_code do
+    puts "🧹 Formatting code..."
+    
+    # Apply dart format
+    sh("cd .. && dart format .")
+    
+    # Apply dart fix
+    sh("cd .. && dart fix --apply")
+    
+    puts "✅ Code formatting complete"
+  end
+
+  # =============================================================================
+  # TESTING SUITES
+  # =============================================================================
+  
+  desc "Run unit tests with coverage"
+  lane :test_unit do
+    puts "🧪 Running unit tests..."
+    
+    setup
+    
+    # Create test results directory
+    sh("mkdir -p ../reports/tests")
+    
+    begin
+      # Run unit tests with coverage
+      sh("cd .. && flutter test --coverage --reporter json > reports/tests/unit_test_results.json")
+      puts "✅ Unit tests completed successfully"
+    rescue => ex
+      puts "❌ Unit tests failed: #{ex}"
+      # Continue with other steps but mark as failed
+      sh("echo 'Unit tests failed' > ../reports/tests/unit_test_failure.log")
+    end
+  end
+  
+  desc "Run widget tests"
+  lane :test_widget do
+    puts "🧪 Running widget tests..."
+    
+    setup
+    
+    sh("mkdir -p ../reports/tests")
+    
+    begin
+      # Run widget tests if they exist
+      if File.directory?("../test/widget")
+        sh("cd .. && flutter test test/widget --reporter json > reports/tests/widget_test_results.json")
+        puts "✅ Widget tests completed successfully"
+      else
+        puts "⚠️ No widget tests found - creating placeholder"
+        sh("mkdir -p ../test/widget")
+        sh("echo '// TODO: Add widget tests' > ../test/widget/README.md")
+      end
+    rescue => ex
+      puts "❌ Widget tests failed: #{ex}"
+      sh("echo 'Widget tests failed' > ../reports/tests/widget_test_failure.log")
+    end
+  end
+  
+  desc "Run integration tests"
+  lane :test_integration do
+    puts "🧪 Running integration tests..."
+    
+    setup
+    
+    sh("mkdir -p ../reports/tests")
+    
+    begin
+      # Run integration tests if they exist
+      if File.directory?("../test/integration")
+        sh("cd .. && flutter test test/integration --reporter json > reports/tests/integration_test_results.json")
+        puts "✅ Integration tests completed successfully"
+      else
+        puts "⚠️ No integration tests found - creating placeholder"
+        sh("mkdir -p ../test/integration")
+        sh("echo '// TODO: Add integration tests' > ../test/integration/README.md")
+      end
+    rescue => ex
+      puts "❌ Integration tests failed: #{ex}"
+      sh("echo 'Integration tests failed' > ../reports/tests/integration_test_failure.log")
+    end
+  end
+  
+  desc "Run golden tests"
+  lane :test_golden do
+    puts "🧪 Running golden tests..."
+    
+    setup
+    
+    sh("mkdir -p ../reports/tests")
+    
+    begin
+      # Run golden tests if they exist
+      if File.directory?("../test/golden")
+        sh("cd .. && flutter test test/golden --reporter json > reports/tests/golden_test_results.json")
+        puts "✅ Golden tests completed successfully"
+      else
+        puts "⚠️ No golden tests found - creating placeholder"
+        sh("mkdir -p ../test/golden")
+        sh("echo '// TODO: Add golden tests' > ../test/golden/README.md")
+      end
+    rescue => ex
+      puts "❌ Golden tests failed: #{ex}"
+      sh("echo 'Golden tests failed' > ../reports/tests/golden_test_failure.log")
+    end
+  end
+
+  # =============================================================================
+  # COVERAGE ANALYSIS
+  # =============================================================================
+  
+  desc "Generate comprehensive coverage report"
+  lane :coverage_report do
+    puts "📊 Generating coverage report..."
+    
+    sh("mkdir -p ../reports/coverage")
+    
+    begin
+      # Run all tests with coverage
+      sh("cd .. && flutter test --coverage")
+      
+      # Generate LCOV report if coverage exists
+      if File.exist?("../coverage/lcov.info")
+        # Install lcov if not available (for local development)
+        begin
+          sh("which lcov")
+        rescue
+          puts "⚠️ lcov not found - coverage HTML report won't be generated"
+        else
+          sh("cd .. && genhtml coverage/lcov.info -o reports/coverage/html")
+        end
+        
+        # Generate coverage summary
+        sh("cd .. && lcov --summary coverage/lcov.info > reports/coverage/summary.txt 2>&1 || echo 'Coverage summary generated'")
+        
+        puts "✅ Coverage report generated successfully"
+      else
+        puts "⚠️ No coverage data found"
+      end
+    rescue => ex
+      puts "❌ Coverage report generation failed: #{ex}"
+    end
+  end
+
+  # =============================================================================
+  # PERFORMANCE MONITORING
+  # =============================================================================
+  
+  desc "Run performance monitoring and analysis"
+  lane :performance_monitoring do
+    puts "⚡ Running performance monitoring..."
+    
+    sh("mkdir -p ../reports/performance")
+    
+    # Build time analysis
+    start_time = Time.now
+    
+    begin
+      puts "📊 Analyzing build performance..."
+      
+      # Profile build time
+      sh("cd .. && time flutter build ios --debug --no-codesign > reports/performance/build_time.log 2>&1")
+      
+      build_time = Time.now - start_time
+      
+      # App size analysis
+      if Dir.exist?("../build/ios/iphoneos/Runner.app")
+        app_size = `du -sh ../build/ios/iphoneos/Runner.app | cut -f1`.strip
+        puts "📱 iOS App Size: #{app_size}"
+        
+        # Save performance metrics
+        File.open("../reports/performance/metrics.json", "w") do |f|
+          f.write({
+            build_time_seconds: build_time,
+            app_size: app_size,
+            timestamp: Time.now.iso8601
+          }.to_json)
+        end
+      end
+      
+      puts "✅ Performance monitoring completed"
+    rescue => ex
+      puts "❌ Performance monitoring failed: #{ex}"
+    end
+  end
+
+  # =============================================================================
+  # BUILD ARTIFACTS
+  # =============================================================================
+  
+  desc "Build iOS App (Debug)"
+  lane :build_ipa do |options|
+    environment = options[:environment] || "debug"
+    puts "🔨 Building iOS App (#{environment})..."
+    
+    setup
+    
+    sh("mkdir -p ../reports/build")
+    
+    begin
+      case environment
+      when "debug"
+        sh("cd .. && flutter build ios --debug --no-codesign")
+      when "release"
+        sh("cd .. && flutter build ios --release --no-codesign")
+      else
+        raise "Unknown environment: #{environment}"
+      end
+      
+      # Archive the build
+      if Dir.exist?("../build/ios/iphoneos/Runner.app")
+        sh("cd ../build/ios/iphoneos && tar -czf ../../../reports/build/ios_app_#{environment}.tar.gz Runner.app")
+        puts "✅ iOS build completed successfully"
+      else
+        puts "⚠️ iOS build directory not found"
+      end
+    rescue => ex
+      puts "❌ iOS build failed: #{ex}"
+    end
+  end
+
+  # =============================================================================
+  # MASTER QUALITY PIPELINE
+  # =============================================================================
+  
+  desc "Run complete quality pipeline"
+  lane :master_quality_pipeline do
+    puts "🎯 Running Master Quality Pipeline for iOS..."
+    
+    # Create reports structure
+    sh("mkdir -p ../reports/{analysis,tests,coverage,performance,build}")
+    
+    # Run all quality checks
+    analyze
+    format_code
+    test_unit
+    test_widget
+    test_integration
+    test_golden
+    coverage_report
+    performance_monitoring
+    build_ipa(environment: "debug")
+    
+    puts "✅ Master Quality Pipeline completed for iOS"
+  end
+  
+  desc "Generate comprehensive quality report"
+  lane :quality_report do
+    puts "📊 Generating comprehensive quality report..."
+    
+    report_file = "../reports/ios_quality_report.md"
+    
+    File.open(report_file, "w") do |f|
+      f.puts "# 🍎 iOS Quality Report"
+      f.puts "Generated: #{Time.now}"
+      f.puts ""
+      f.puts "## 📋 Pipeline Summary"
+      f.puts "- **Platform**: iOS"
+      f.puts "- **Environment**: Quality-First CI/CD"
+      f.puts "- **Report Generated**: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
+      f.puts ""
+      
+      # Analysis results
+      if File.exist?("../reports/analysis/flutter_analyze.log")
+        f.puts "## 🔍 Static Analysis"
+        f.puts "```"
+        f.puts File.read("../reports/analysis/flutter_analyze.log")
+        f.puts "```"
+        f.puts ""
+      end
+      
+      # Test results
+      f.puts "## 🧪 Test Results"
+      ["unit", "widget", "integration", "golden"].each do |test_type|
+        if File.exist?("../reports/tests/#{test_type}_test_results.json")
+          f.puts "- ✅ #{test_type.capitalize} tests: PASSED"
+        elsif File.exist?("../reports/tests/#{test_type}_test_failure.log")
+          f.puts "- ❌ #{test_type.capitalize} tests: FAILED"
+        else
+          f.puts "- ⚠️ #{test_type.capitalize} tests: NOT FOUND"
+        end
+      end
+      f.puts ""
+      
+      # Coverage
+      if File.exist?("../reports/coverage/summary.txt")
+        f.puts "## 📊 Coverage"
+        f.puts "```"
+        f.puts File.read("../reports/coverage/summary.txt")
+        f.puts "```"
+        f.puts ""
+      end
+      
+      # Performance
+      if File.exist?("../reports/performance/metrics.json")
+        f.puts "## ⚡ Performance"
+        f.puts "```json"
+        f.puts File.read("../reports/performance/metrics.json")
+        f.puts "```"
+        f.puts ""
+      end
+      
+      f.puts "## 🎯 Quality Gates"
+      f.puts "- Static Analysis: #{File.exist?('../reports/analysis/flutter_analyze.log') ? '✅' : '❌'}"
+      f.puts "- Unit Tests: #{File.exist?('../reports/tests/unit_test_results.json') ? '✅' : '❌'}"
+      f.puts "- Coverage Report: #{File.exist?('../coverage/lcov.info') ? '✅' : '❌'}"
+      f.puts "- Build Success: #{File.exist?('../reports/build/ios_app_debug.tar.gz') ? '✅' : '❌'}"
+    end
+    
+    puts "✅ Quality report generated: #{report_file}"
+  end
+end

@@ -1,0 +1,170 @@
+name: 🍎 iOS Quality Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.16.0'
+  RUBY_VERSION: '3.1'
+
+# Cancel previous runs for the same workflow
+concurrency:
+  group: ios-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =============================================================================
+  # iOS QUALITY PIPELINE
+  # =============================================================================
+  ios-quality-pipeline:
+    name: 🍎 iOS Quality & Build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      
+      - name: 💎 Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ios
+      
+      - name: 📦 Install iOS Dependencies
+        run: |
+          cd ios
+          bundle install
+      
+      - name: 📦 Install Flutter Dependencies
+        run: flutter pub get
+      
+      - name: 🔍 Run iOS Quality Analysis
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile analyze
+      
+      - name: 🧹 Run iOS Code Formatting
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile format_code
+      
+      - name: 🧪 Run Unit Tests
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile test_unit
+      
+      - name: 🧪 Run Widget Tests
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile test_widget
+      
+      - name: 🧪 Run Integration Tests
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile test_integration
+      
+      - name: 🧪 Run Golden Tests
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile test_golden
+      
+      - name: 📊 Generate Coverage Report
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile coverage_report
+      
+      - name: ⚡ Performance Monitoring
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile performance_monitoring
+      
+      - name: 🔨 Build iOS App (Debug)
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile build_ipa environment:debug
+      
+      - name: 🔨 Build iOS App (Release)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile build_ipa environment:release
+      
+      - name: 🎯 Run Master Quality Pipeline
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile master_quality_pipeline
+      
+      - name: 📊 Generate Quality Report
+        run: |
+          cd ios
+          bundle exec fastlane --file QualityFastfile quality_report
+      
+      - name: 📤 Upload iOS Quality Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-quality-reports
+          path: |
+            reports/
+            coverage/
+          retention-days: 30
+      
+      - name: 📤 Upload iOS Build Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-build-artifacts
+          path: |
+            reports/build/
+            build/ios/iphoneos/Runner.app/
+          retention-days: 30
+
+  # =============================================================================
+  # QUALITY SUMMARY
+  # =============================================================================
+  ios-quality-summary:
+    name: 📊 iOS Quality Summary
+    runs-on: ubuntu-latest
+    needs: [ios-quality-pipeline]
+    if: always()
+    
+    steps:
+      - name: 📥 Download iOS Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-quality-reports
+          path: ./ios-reports
+      
+      - name: 📊 Generate Summary
+        run: |
+          echo "# 🍎 iOS Quality Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| iOS Quality Pipeline | ${{ needs.ios-quality-pipeline.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "ios-reports/ios_quality_report.md" ]; then
+            echo "## 📊 Detailed Quality Report" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -50 ios-reports/ios_quality_report.md >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📄 Full reports available in artifacts" >> $GITHUB_STEP_SUMMARY
