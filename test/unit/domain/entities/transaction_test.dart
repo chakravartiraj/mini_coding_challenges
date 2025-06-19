@@ -22,7 +22,7 @@ void main() {
         expect(transaction.title, 'Test Income');
         expect(transaction.description, 'Test income description');
         expect(transaction.amount, 100.0);
-        expect(transaction.date, DateTime(2024, 1));
+        expect(transaction.date, DateTime(2024));
         expect(transaction.type, TransactionType.income);
       });
 
@@ -59,7 +59,7 @@ void main() {
         expect(transactions[6].date, DateTime(2030, 12, 31));
 
         // Past date
-        expect(transactions[7].date, DateTime(1990, 1));
+        expect(transactions[7].date, DateTime(1990));
       });
     });
 
@@ -300,7 +300,7 @@ void main() {
         test('should handle edge case dates', () {
           // Arrange
           final oldTransaction = TransactionTestDataBuilder.income(
-            date: DateTime(1990, 1),
+            date: DateTime(1990),
           );
           final futureTransaction = TransactionTestDataBuilder.income(
             date: DateTime(2030, 12, 31),
@@ -317,7 +317,7 @@ void main() {
       test('should provide readable string representation', () {
         // Arrange
         final transaction = TransactionTestDataBuilder.income(
-          title: 'Test Income',
+          
         );
 
         // Act
@@ -336,7 +336,7 @@ void main() {
       test('should be immutable - create new instance for modifications', () {
         // Arrange
         final original = TransactionTestDataBuilder.income(
-          amount: 100,
+          
         );
 
         // Act - Create new instance with modified amount

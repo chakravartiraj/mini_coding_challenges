@@ -26,7 +26,7 @@ class TransactionTestDataBuilder {
     title: title,
     description: description,
     amount: amount,
-    date: date ?? DateTime(2024, 1),
+    date: date ?? DateTime(2024),
     type: TransactionType.income,
   );
 
@@ -44,7 +44,7 @@ class TransactionTestDataBuilder {
     title: title,
     description: description,
     amount: amount,
-    date: date ?? DateTime(2024, 1),
+    date: date ?? DateTime(2024),
     type: TransactionType.expense,
   );
 
@@ -135,7 +135,7 @@ class TransactionTestDataBuilder {
     income(id: 7, date: DateTime(2030, 12, 31), amount: 200),
 
     // Past date
-    expense(id: 8, date: DateTime(1990, 1), amount: 25),
+    expense(id: 8, date: DateTime(1990), amount: 25),
   ];
 }
 
@@ -152,7 +152,7 @@ class TestConstants {
   static const double defaultExpenseAmount = 50;
 
   /// Test date ranges
-  static final DateTime testStartDate = DateTime(2024, 1);
+  static final DateTime testStartDate = DateTime(2024);
   static final DateTime testEndDate = DateTime(2024, 12, 31);
 
   /// Error messages for testing
@@ -189,7 +189,7 @@ class TestUtils {
 
   /// Calculates the total balance from a list of transactions
   static double calculateTotalBalance(List<Transaction> transactions) => transactions.fold(
-      0.0,
+      0,
       (sum, transaction) => sum + transaction.signedAmount,
     );
 

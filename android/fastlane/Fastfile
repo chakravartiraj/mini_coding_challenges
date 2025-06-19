@@ -182,10 +182,10 @@ platform :android do
     setup
     
     # Build APK with dynamic version
-    sh("cd .. && flutter build apk --debug --flavor dev --build-name=#{version_name} --build-number=#{version_code}")
+    sh("cd .. && flutter build apk --debug --flavor dev --target=lib/main_dev.dart --build-name=#{version_name} --build-number=#{version_code}")
     
     # Build App Bundle with dynamic version
-    sh("cd .. && flutter build appbundle --debug --flavor dev --build-name=#{version_name} --build-number=#{version_code}")
+    sh("cd .. && flutter build appbundle --debug --flavor dev --target=lib/main_dev.dart --build-name=#{version_name} --build-number=#{version_code}")
     
     # Copy artifacts with timestamp-based names
     timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug")
@@ -213,10 +213,10 @@ platform :android do
     setup
     
     # Build APK with dynamic version
-    sh("cd .. && flutter build apk --release --build-name=#{version_name} --build-number=#{version_code}")
+    sh("cd .. && flutter build apk --release --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
     
     # Build App Bundle with dynamic version
-    sh("cd .. && flutter build appbundle --release --build-name=#{version_name} --build-number=#{version_code}")
+    sh("cd .. && flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
     
     # Copy artifacts with timestamp-based names
     timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "release")
@@ -305,51 +305,42 @@ platform :android do
       sh("mkdir -p ../build/app/outputs/bundle/release")
     end
     
-    # Define original and new paths based on build type
+    # Define original paths based on build type (with product flavors)
     if build_type == "debug"
-      original_apk = "../build/app/outputs/flutter-apk/app-debug.apk"
-      original_aab = "../build/app/outputs/bundle/debug/app-debug.aab"
-      alternative_apk = "../build/app/outputs/apk/debug/app-debug.apk"
-      new_apk = "../build/app/outputs/apk/app-debug-#{timestamp}-#{git_commit}.apk"
-      new_aab = "../build/app/outputs/bundle/debug/app-debug-#{timestamp}-#{git_commit}.aab"
+      # Debug builds use dev flavor
+      original_apk = "../build/app/outputs/flutter-apk/app-dev-debug.apk"
+      original_aab = "../build/app/outputs/bundle/devDebug/app-dev-debug.aab"
+      alternative_apk = "../build/app/outputs/apk/dev/debug/app-dev-debug.apk"
     else
-      original_apk = "../build/app/outputs/flutter-apk/app-release.apk"
-      original_aab = "../build/app/outputs/bundle/release/app-release.aab"
-      alternative_apk = "../build/app/outputs/apk/release/app-release.apk"
-      new_apk = "../build/app/outputs/apk/app-release-#{timestamp}-#{git_commit}.apk"
-      new_aab = "../build/app/outputs/bundle/release/app-release-#{timestamp}-#{git_commit}.aab"
+      # Release builds use production flavor  
+      original_apk = "../build/app/outputs/flutter-apk/app-production-release.apk"
+      original_aab = "../build/app/outputs/bundle/productionRelease/app-production-release.aab"
+      alternative_apk = "../build/app/outputs/apk/production/release/app-production-release.apk"
     end
     
-    # Copy files with new names
-    original_apk_full = File.expand_path(original_apk)
-    alternative_apk_full = File.expand_path(alternative_apk)
-    original_aab_full = File.expand_path(original_aab)
-    new_apk_full = File.expand_path(new_apk)
-    new_aab_full = File.expand_path(new_aab)
+    # Check if files exist and list them for debugging
+    puts "🔍 Checking for build artifacts..."
+    puts "Looking for APK: #{File.expand_path(original_apk)}"
+    puts "APK exists: #{File.exist?(File.expand_path(original_apk))}"
     
-    # Copy APK from available location to correct timestamped location
-    if File.exist?(original_apk_full)
-      FileUtils.cp(original_apk_full, new_apk_full)
-      puts "📦 APK copied from flutter-apk to: #{new_apk}"
-    elsif File.exist?(alternative_apk_full)
-      FileUtils.cp(alternative_apk_full, new_apk_full)
-      puts "📦 APK copied from apk/debug to: #{new_apk}"
-    else
-      UI.error("❌ APK not found in expected locations: #{original_apk_full} or #{alternative_apk_full}")
-    end
+    puts "Looking for AAB: #{File.expand_path(original_aab)}"  
+    puts "AAB exists: #{File.exist?(File.expand_path(original_aab))}"
     
-    if File.exist?(original_aab_full)
-      FileUtils.cp(original_aab_full, new_aab_full)
-      puts "📦 AAB copied to: #{new_aab}"
-    else
-      UI.error("❌ Original AAB not found: #{original_aab_full}")
-    end
+    puts "Alternative APK: #{File.expand_path(alternative_apk)}"
+    puts "Alternative APK exists: #{File.exist?(File.expand_path(alternative_apk))}"
     
+    # List all available files for debugging
+    puts "📁 Available APK files:"
+    Dir.glob("../build/app/outputs/**/*.apk").each { |file| puts "   #{file}" }
+    
+    puts "� Available AAB files:"
+    Dir.glob("../build/app/outputs/**/*.aab").each { |file| puts "   #{file}" }
+
     {
       version_name: version_name,
       version_code: version_code,
-      apk_path: new_apk,
-      aab_path: new_aab,
+      apk_path: original_apk,
+      aab_path: original_aab,
       original_apk_path: original_apk,
       original_aab_path: original_aab
     }

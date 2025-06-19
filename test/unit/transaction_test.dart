@@ -11,7 +11,7 @@ void main() {
         title: 'Test Transaction',
         description: 'Test Description',
         amount: 100,
-        date: DateTime(2024, 1),
+        date: DateTime(2024),
         type: TransactionType.income,
       );
 
@@ -21,7 +21,7 @@ void main() {
       expect(transaction.title, 'Test Transaction');
       expect(transaction.description, 'Test Description');
       expect(transaction.amount, 100.0);
-      expect(transaction.date, DateTime(2024, 1));
+      expect(transaction.date, DateTime(2024));
       expect(transaction.type, TransactionType.income);
     });
 
@@ -33,7 +33,7 @@ void main() {
         title: 'Test Transaction',
         description: 'Test Description',
         amount: 100,
-        date: DateTime(2024, 1),
+        date: DateTime(2024),
         type: TransactionType.income,
       );
 
@@ -43,7 +43,7 @@ void main() {
         title: 'Test Transaction',
         description: 'Test Description',
         amount: 100,
-        date: DateTime(2024, 1),
+        date: DateTime(2024),
         type: TransactionType.income,
       );
 
@@ -60,7 +60,7 @@ void main() {
         title: 'Test Transaction 1',
         description: 'Test Description 1',
         amount: 100,
-        date: DateTime(2024, 1),
+        date: DateTime(2024),
         type: TransactionType.income,
       );
 
@@ -86,7 +86,7 @@ void main() {
         title: 'Salary',
         description: 'Monthly salary',
         amount: 5000,
-        date: DateTime(2024, 1),
+        date: DateTime(2024),
         type: TransactionType.income,
       );
 
@@ -122,7 +122,7 @@ void main() {
         title: 'Test',
         description: 'Test',
         amount: 1234.56,
-        date: DateTime(2024, 1),
+        date: DateTime(2024),
         type: TransactionType.income,
       );
 

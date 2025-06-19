@@ -7,12 +7,13 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
 import 'package:mini_coding_challenges/features/transactions/domain/usecases/get_transactions_usecase.dart';
 import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_bloc.dart';
 import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_event.dart';
 import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_state.dart';
+import 'package:mocktail/mocktail.dart';
+
 import '../../../helpers/test_data_builders.dart';
 
 // Mock dependencies
