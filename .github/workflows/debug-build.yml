@@ -21,7 +21,7 @@ on:
         type: string
 
 env:
-  FLUTTER_VERSION: '3.24.3'
+  FLUTTER_VERSION: 'latest'
   JAVA_VERSION: '17'
 
 jobs:
@@ -52,6 +52,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
+
+      - name: 🔍 Verify Dart SDK Version
+        run: |
+          echo "Flutter version:"
+          flutter --version
+          echo "Dart SDK version:"
+          dart --version
+          echo "Required Dart SDK: ^3.8.1"
 
       - name: 💎 Setup Ruby & Fastlane
         uses: ruby/setup-ruby@v1
