@@ -1,10 +1,10 @@
-name: 🚀 Dev Build with Dynamic Versioning
+name: 🚀 Staging Build with Dynamic Versioning
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ staging, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ staging ]
   workflow_dispatch:
     inputs:
       build_type:
@@ -22,10 +22,11 @@ on:
 
 env:
   JAVA_VERSION: '17'
+  FLAVOR: 'staging'
 
 jobs:
   build:
-    name: 🔨 Build Dev ${{ github.event.inputs.build_type || 'Debug' }} Artifacts
+    name: 🔨 Build Staging ${{ github.event.inputs.build_type || 'Debug' }} Artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -98,8 +99,8 @@ jobs:
           
           # Generate version name
           MAJOR_MINOR_PATCH="1.0.0"
-          if [[ "$GIT_BRANCH" == "main" || "$GIT_BRANCH" == "master" ]]; then
-            VERSION_NAME="${MAJOR_MINOR_PATCH}-debug-${GIT_COMMIT}"
+          if [[ "$GIT_BRANCH" == "staging" ]]; then
+            VERSION_NAME="${MAJOR_MINOR_PATCH}-staging-${GIT_COMMIT}"
           else
             CLEAN_BRANCH=$(echo "$GIT_BRANCH" | sed 's/[^a-zA-Z0-9]//g')
             VERSION_NAME="${MAJOR_MINOR_PATCH}-${CLEAN_BRANCH}-${GIT_COMMIT}"
@@ -124,14 +125,14 @@ jobs:
       # BUILD ARTIFACTS
       # =============================================================================
 
-      - name: 🔨 Build Artifacts with Fastlane
+      - name: 🔨 Build Staging Artifacts with Fastlane
         run: |
           cd android
           BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
           if [ "$BUILD_TYPE" = "release" ]; then
-            bundle exec fastlane build_release_artifacts
+            bundle exec fastlane build_staging_release_artifacts
           else
-            bundle exec fastlane build_debug_artifacts
+            bundle exec fastlane build_staging_debug_artifacts
           fi
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
@@ -149,7 +150,7 @@ jobs:
             "workflow_run": "${{ github.run_number }}",
             "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "build_type": "${{ github.event.inputs.build_type || 'debug' }}",
-            "flavor": "dev",
+            "flavor": "staging",
             "flutter_version": "$(flutter --version | head -n1)",
             "java_version": "${{ env.JAVA_VERSION }}"
           }
@@ -161,53 +162,35 @@ jobs:
 
       - name: 🔍 Verify Build Artifacts
         run: |
-          echo "🔍 Verifying build artifacts..."
+          echo "🔍 Verifying staging build artifacts..."
           
           BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
-          echo "🔍 Looking for $BUILD_TYPE artifacts..."
+          echo "🔍 Looking for staging $BUILD_TYPE artifacts..."
           
           # Define all possible APK locations based on build type
           if [ "$BUILD_TYPE" = "release" ]; then
             APK_PATHS=(
-              "build/app/outputs/flutter-apk/app-production-release.apk"
-              "build/app/outputs/apk/production/release/app-production-release.apk"
               "build/app/outputs/flutter-apk/app-staging-release.apk"
               "build/app/outputs/apk/staging/release/app-staging-release.apk"
-              "build/app/outputs/flutter-apk/app-dev-release.apk"
-              "build/app/outputs/apk/dev/release/app-dev-release.apk"
               "build/app/outputs/flutter-apk/app-release.apk"
               "build/app/outputs/apk/release/app-release.apk"
             )
             AAB_PATHS=(
-              "build/app/outputs/bundle/productionRelease/app-production-release.aab"
-              "build/app/outputs/bundle/release/app-production-release.aab"
               "build/app/outputs/bundle/stagingRelease/app-staging-release.aab"
               "build/app/outputs/bundle/release/app-staging-release.aab"
-              "build/app/outputs/bundle/devRelease/app-dev-release.aab"
-              "build/app/outputs/bundle/release/app-dev-release.aab"
               "build/app/outputs/bundle/release/app-release.aab"
             )
           else
             APK_PATHS=(
-              "build/app/outputs/flutter-apk/app-dev-debug.apk"
-              "build/app/outputs/apk/dev/debug/app-dev-debug.apk"
               "build/app/outputs/flutter-apk/app-staging-debug.apk"
               "build/app/outputs/apk/staging/debug/app-staging-debug.apk"
-              "build/app/outputs/flutter-apk/app-production-debug.apk"
-              "build/app/outputs/apk/production/debug/app-production-debug.apk"
               "build/app/outputs/flutter-apk/app-debug.apk"
               "build/app/outputs/apk/debug/app-debug.apk"
-              "build/app/outputs/apk/app-debug.apk"
             )
             AAB_PATHS=(
-              "build/app/outputs/bundle/devDebug/app-dev-debug.aab"
-              "build/app/outputs/bundle/debug/app-dev-debug.aab"
               "build/app/outputs/bundle/stagingDebug/app-staging-debug.aab"
               "build/app/outputs/bundle/debug/app-staging-debug.aab"
-              "build/app/outputs/bundle/productionDebug/app-production-debug.aab"
-              "build/app/outputs/bundle/debug/app-production-debug.aab"
               "build/app/outputs/bundle/debug/app-debug.aab"
-              "build/app/outputs/bundle/app-debug.aab"
             )
           fi
           
@@ -216,15 +199,15 @@ jobs:
           for apk_path in "${APK_PATHS[@]}"; do
             if [ -f "$apk_path" ]; then
               APK_SIZE=$(du -h "$apk_path" | cut -f1)
-              echo "✅ APK found: $(basename "$apk_path") (${APK_SIZE}) at $apk_path"
-              echo "timestamped_apk=$apk_path" >> $GITHUB_ENV
+              echo "✅ Staging APK found: $(basename "$apk_path") (${APK_SIZE}) at $apk_path"
+              echo "staging_apk=$apk_path" >> $GITHUB_ENV
               APK_FOUND="$apk_path"
               break
             fi
           done
           
           if [ -z "$APK_FOUND" ]; then
-            echo "❌ APK not found in any expected location!"
+            echo "❌ Staging APK not found in any expected location!"
             echo "📁 Checking all available APK files..."
             find build -name "*.apk" 2>/dev/null | head -20 || echo "No APK files found anywhere"
             echo "📁 Listing build/app/outputs structure:"
@@ -237,15 +220,15 @@ jobs:
           for aab_path in "${AAB_PATHS[@]}"; do
             if [ -f "$aab_path" ]; then
               AAB_SIZE=$(du -h "$aab_path" | cut -f1)
-              echo "✅ AAB found: $(basename "$aab_path") (${AAB_SIZE}) at $aab_path"
-              echo "timestamped_aab=$aab_path" >> $GITHUB_ENV
+              echo "✅ Staging AAB found: $(basename "$aab_path") (${AAB_SIZE}) at $aab_path"
+              echo "staging_aab=$aab_path" >> $GITHUB_ENV
               AAB_FOUND="$aab_path"
               break
             fi
           done
           
           if [ -z "$AAB_FOUND" ]; then
-            echo "❌ AAB not found in any expected location!"
+            echo "❌ Staging AAB not found in any expected location!"
             echo "📁 Checking all available AAB files..."
             find build -name "*.aab" 2>/dev/null | head -20 || echo "No AAB files found anywhere"
             echo "📁 Listing build/app/outputs/bundle structure:"
@@ -253,7 +236,7 @@ jobs:
             exit 1
           fi
           
-          echo "🎉 All artifacts verified successfully!"
+          echo "🎉 All staging artifacts verified successfully!"
           echo "📦 APK: $APK_FOUND"
           echo "📦 AAB: $AAB_FOUND"
 
@@ -261,39 +244,29 @@ jobs:
       # ARTIFACT UPLOAD
       # =============================================================================
 
-      - name: 📤 Upload APK Artifacts
+      - name: 📤 Upload Staging APK Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: apk-${{ github.event.inputs.build_type || 'debug' }}-${{ steps.build_info.outputs.version_name }}
+          name: staging-apk-${{ github.event.inputs.build_type || 'debug' }}-${{ steps.build_info.outputs.version_name }}
           path: |
-            build/app/outputs/flutter-apk/app-*-debug.apk
-            build/app/outputs/flutter-apk/app-*-release.apk
+            build/app/outputs/flutter-apk/app-staging-*.apk
+            build/app/outputs/apk/staging/*/app-staging-*.apk
             build/app/outputs/flutter-apk/app-debug.apk
             build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/apk/*/debug/app-*-debug.apk
-            build/app/outputs/apk/*/release/app-*-release.apk
-            build/app/outputs/apk/debug/app-debug.apk
-            build/app/outputs/apk/release/app-release.apk
-            build/app/outputs/apk/app-debug.apk
-            build/app/outputs/apk/app-release.apk
             build_metadata.json
             build_info.json
           retention-days: 30
           compression-level: 6
 
-      - name: 📤 Upload App Bundle Artifacts
+      - name: 📤 Upload Staging App Bundle Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aab-${{ github.event.inputs.build_type || 'debug' }}-${{ steps.build_info.outputs.version_name }}
+          name: staging-aab-${{ github.event.inputs.build_type || 'debug' }}-${{ steps.build_info.outputs.version_name }}
           path: |
-            build/app/outputs/bundle/*/app-*-debug.aab
-            build/app/outputs/bundle/*/app-*-release.aab
-            build/app/outputs/bundle/debug/app-*-debug.aab
-            build/app/outputs/bundle/release/app-*-release.aab
+            build/app/outputs/bundle/staging*/app-staging-*.aab
+            build/app/outputs/bundle/*/app-staging-*.aab
             build/app/outputs/bundle/debug/app-debug.aab
             build/app/outputs/bundle/release/app-release.aab
-            build/app/outputs/bundle/app-debug.aab
-            build/app/outputs/bundle/app-release.aab
             build_metadata.json
             build_info.json
           retention-days: 30
@@ -302,7 +275,7 @@ jobs:
       - name: 📤 Upload Build Information
         uses: actions/upload-artifact@v4
         with:
-          name: build-info-${{ steps.build_info.outputs.version_name }}
+          name: staging-build-info-${{ steps.build_info.outputs.version_name }}
           path: |
             build_metadata.json
             build_info.json
@@ -316,11 +289,12 @@ jobs:
         if: always()
         run: |
           BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
-          echo "## 🚀 $BUILD_TYPE Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Staging $BUILD_TYPE Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Build Information" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Flavor** | \`staging\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Version Name** | \`${{ steps.build_info.outputs.version_name }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Version Code** | \`${{ steps.build_info.outputs.version_code }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Git Branch** | \`${{ steps.build_info.outputs.git_branch }}\` |" >> $GITHUB_STEP_SUMMARY
@@ -329,8 +303,8 @@ jobs:
           echo "| **Flutter Version** | \`$(flutter --version | head -n1 | cut -d' ' -f2)\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📱 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **APK**: \`app-$BUILD_TYPE.apk\`" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **App Bundle**: \`app-$BUILD_TYPE.aab\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Staging APK**: \`app-staging-$BUILD_TYPE.apk\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Staging App Bundle**: \`app-staging-$BUILD_TYPE.aab\`" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Build Metadata**: \`build_metadata.json\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Workflow Information" >> $GITHUB_STEP_SUMMARY
@@ -342,20 +316,20 @@ jobs:
   # NOTIFICATION (Optional)
   # =============================================================================
   notify:
-    name: 📢 Notify Build Completion
+    name: 📢 Notify Staging Build Completion
     runs-on: ubuntu-latest
     needs: build
-    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: always() && (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/develop')
     
     steps:
       - name: 📢 Notify Success
         if: needs.build.result == 'success'
         run: |
-          echo "✅ Build completed successfully!"
-          echo "🎉 Artifacts are ready for download"
+          echo "✅ Staging build completed successfully!"
+          echo "🎉 Staging artifacts are ready for download"
           
       - name: 📢 Notify Failure
         if: needs.build.result == 'failure'
         run: |
-          echo "❌ Build failed!"
+          echo "❌ Staging build failed!"
           echo "🔍 Check the logs for details"

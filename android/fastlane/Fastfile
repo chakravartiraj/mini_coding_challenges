@@ -188,10 +188,10 @@ platform :android do
     sh("cd .. && flutter build appbundle --debug --flavor dev --target=lib/main_dev.dart --build-name=#{version_name} --build-number=#{version_code}")
     
     # Copy artifacts with timestamp-based names
-    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug")
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug", flavor: "dev")
     
     # Create build info file
-    create_build_info(version_name: version_name, version_code: version_code, build_type: "debug")
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "debug", flavor: "dev")
     
     puts "✅ Debug artifacts build completed with version #{version_name}"
     puts "📦 Artifacts available at:"
@@ -219,12 +219,140 @@ platform :android do
     sh("cd .. && flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
     
     # Copy artifacts with timestamp-based names
-    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "release")
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "release", flavor: "production")
     
     # Create build info file
-    create_build_info(version_name: version_name, version_code: version_code, build_type: "release")
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "release", flavor: "production")
     
     puts "✅ Release artifacts build completed with version #{version_name}"
+    puts "📦 Artifacts available at:"
+    puts "   APK: #{timestamped_artifacts[:apk_path]}"
+    puts "   AAB: #{timestamped_artifacts[:aab_path]}"
+  end
+
+  # =============================================================================
+  # FLAVOR-SPECIFIC BUILD LANES
+  # =============================================================================
+  
+  desc "Build staging debug artifacts with dynamic versioning"
+  lane :build_staging_debug_artifacts do |options|
+    puts "🚀 Building staging debug artifacts with dynamic versioning..."
+    
+    # Generate dynamic version
+    version_info = generate_dynamic_version
+    version_name = version_info[:version_name]
+    version_code = version_info[:version_code]
+    
+    puts "📦 Building staging debug with version: #{version_name} (#{version_code})"
+    
+    setup
+    
+    # Build APK with dynamic version
+    sh("cd .. && flutter build apk --debug --flavor staging --target=lib/main_staging.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Build App Bundle with dynamic version
+    sh("cd .. && flutter build appbundle --debug --flavor staging --target=lib/main_staging.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Copy artifacts with timestamp-based names
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug", flavor: "staging")
+    
+    # Create build info file
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "debug", flavor: "staging")
+    
+    puts "✅ Staging debug artifacts build completed with version #{version_name}"
+    puts "📦 Artifacts available at:"
+    puts "   APK: #{timestamped_artifacts[:apk_path]}"
+    puts "   AAB: #{timestamped_artifacts[:aab_path]}"
+  end
+  
+  desc "Build staging release artifacts with dynamic versioning"
+  lane :build_staging_release_artifacts do |options|
+    puts "🚀 Building staging release artifacts with dynamic versioning..."
+    
+    # Generate dynamic version
+    version_info = generate_dynamic_version
+    version_name = version_info[:version_name]
+    version_code = version_info[:version_code]
+    
+    puts "📦 Building staging release with version: #{version_name} (#{version_code})"
+    
+    setup
+    
+    # Build APK with dynamic version
+    sh("cd .. && flutter build apk --release --flavor staging --target=lib/main_staging.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Build App Bundle with dynamic version
+    sh("cd .. && flutter build appbundle --release --flavor staging --target=lib/main_staging.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Copy artifacts with timestamp-based names
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "release", flavor: "staging")
+    
+    # Create build info file
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "release", flavor: "staging")
+    
+    puts "✅ Staging release artifacts build completed with version #{version_name}"
+    puts "📦 Artifacts available at:"
+    puts "   APK: #{timestamped_artifacts[:apk_path]}"
+    puts "   AAB: #{timestamped_artifacts[:aab_path]}"
+  end
+  
+  desc "Build production debug artifacts with dynamic versioning"
+  lane :build_production_debug_artifacts do |options|
+    puts "🚀 Building production debug artifacts with dynamic versioning..."
+    
+    # Generate dynamic version
+    version_info = generate_dynamic_version
+    version_name = version_info[:version_name]
+    version_code = version_info[:version_code]
+    
+    puts "📦 Building production debug with version: #{version_name} (#{version_code})"
+    
+    setup
+    
+    # Build APK with dynamic version
+    sh("cd .. && flutter build apk --debug --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Build App Bundle with dynamic version
+    sh("cd .. && flutter build appbundle --debug --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Copy artifacts with timestamp-based names
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug", flavor: "production")
+    
+    # Create build info file
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "debug", flavor: "production")
+    
+    puts "✅ Production debug artifacts build completed with version #{version_name}"
+    puts "📦 Artifacts available at:"
+    puts "   APK: #{timestamped_artifacts[:apk_path]}"
+    puts "   AAB: #{timestamped_artifacts[:aab_path]}"
+  end
+  
+  desc "Build production release artifacts with dynamic versioning"
+  lane :build_production_release_artifacts do |options|
+    puts "🚀 Building production release artifacts with dynamic versioning..."
+    
+    # Generate dynamic version
+    version_info = generate_dynamic_version
+    version_name = version_info[:version_name]
+    version_code = version_info[:version_code]
+    
+    puts "📦 Building production release with version: #{version_name} (#{version_code})"
+    
+    setup
+    
+    # Build APK with dynamic version
+    sh("cd .. && flutter build apk --release --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Build App Bundle with dynamic version
+    sh("cd .. && flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Copy artifacts with timestamp-based names
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "release", flavor: "production")
+    
+    # Create build info file
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "release", flavor: "production")
+    
+    puts "✅ Production release artifacts build completed with version #{version_name}"
     puts "📦 Artifacts available at:"
     puts "   APK: #{timestamped_artifacts[:apk_path]}"
     puts "   AAB: #{timestamped_artifacts[:aab_path]}"
@@ -271,6 +399,7 @@ platform :android do
     version_name = options[:version_name]
     version_code = options[:version_code]
     build_type = options[:build_type] || "debug"
+    flavor = options[:flavor] || "dev"
     
     build_info = {
       version_name: version_name,
@@ -279,7 +408,8 @@ platform :android do
       git_branch: sh("git rev-parse --abbrev-ref HEAD", log: false).strip,
       git_commit: sh("git rev-parse HEAD", log: false).strip,
       git_commit_short: sh("git rev-parse --short HEAD", log: false).strip,
-      build_type: build_type
+      build_type: build_type,
+      flavor: flavor
     }
     
     # Write build info to JSON file
@@ -292,6 +422,7 @@ platform :android do
     version_name = options[:version_name]
     version_code = options[:version_code]
     build_type = options[:build_type] || "debug"
+    flavor = options[:flavor] || "dev"
     
     # Generate timestamp for filenames
     timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
@@ -305,21 +436,51 @@ platform :android do
       sh("mkdir -p ../build/app/outputs/bundle/release")
     end
     
-    # Define original paths based on build type (with product flavors)
+    # Define original paths based on build type and flavor
     if build_type == "debug"
-      # Debug builds use dev flavor
-      original_apk = "../build/app/outputs/flutter-apk/app-dev-debug.apk"
-      original_aab = "../build/app/outputs/bundle/devDebug/app-dev-debug.aab"
-      alternative_apk = "../build/app/outputs/apk/dev/debug/app-dev-debug.apk"
-    else
-      # Release builds use production flavor  
-      original_apk = "../build/app/outputs/flutter-apk/app-production-release.apk"
-      original_aab = "../build/app/outputs/bundle/productionRelease/app-production-release.aab"
-      alternative_apk = "../build/app/outputs/apk/production/release/app-production-release.apk"
+      case flavor
+      when "staging"
+        original_apk = "../build/app/outputs/flutter-apk/app-staging-debug.apk"
+        original_aab = "../build/app/outputs/bundle/stagingDebug/app-staging-debug.aab"
+        alternative_apk = "../build/app/outputs/apk/staging/debug/app-staging-debug.apk"
+        alternative_aab = "../build/app/outputs/bundle/debug/app-staging-debug.aab"
+      when "production"
+        original_apk = "../build/app/outputs/flutter-apk/app-production-debug.apk"
+        original_aab = "../build/app/outputs/bundle/productionDebug/app-production-debug.aab"
+        alternative_apk = "../build/app/outputs/apk/production/debug/app-production-debug.apk"
+        alternative_aab = "../build/app/outputs/bundle/debug/app-production-debug.aab"
+      else # dev flavor
+        original_apk = "../build/app/outputs/flutter-apk/app-dev-debug.apk"
+        original_aab = "../build/app/outputs/bundle/devDebug/app-dev-debug.aab"
+        alternative_apk = "../build/app/outputs/apk/dev/debug/app-dev-debug.apk"
+        alternative_aab = "../build/app/outputs/bundle/debug/app-dev-debug.aab"
+      end
+      new_apk = "../build/app/outputs/apk/app-#{flavor}-debug-#{timestamp}-#{git_commit}.apk"
+      new_aab = "../build/app/outputs/bundle/debug/app-#{flavor}-debug-#{timestamp}-#{git_commit}.aab"
+    else # release builds
+      case flavor
+      when "staging"
+        original_apk = "../build/app/outputs/flutter-apk/app-staging-release.apk"
+        original_aab = "../build/app/outputs/bundle/stagingRelease/app-staging-release.aab"
+        alternative_apk = "../build/app/outputs/apk/staging/release/app-staging-release.apk"
+        alternative_aab = "../build/app/outputs/bundle/release/app-staging-release.aab"
+      when "production"
+        original_apk = "../build/app/outputs/flutter-apk/app-production-release.apk"
+        original_aab = "../build/app/outputs/bundle/productionRelease/app-production-release.aab"
+        alternative_apk = "../build/app/outputs/apk/production/release/app-production-release.apk"
+        alternative_aab = "../build/app/outputs/bundle/release/app-production-release.aab"
+      else # dev flavor
+        original_apk = "../build/app/outputs/flutter-apk/app-dev-release.apk"
+        original_aab = "../build/app/outputs/bundle/devRelease/app-dev-release.aab"
+        alternative_apk = "../build/app/outputs/apk/dev/release/app-dev-release.apk"
+        alternative_aab = "../build/app/outputs/bundle/release/app-dev-release.aab"
+      end
+      new_apk = "../build/app/outputs/apk/app-#{flavor}-release-#{timestamp}-#{git_commit}.apk"
+      new_aab = "../build/app/outputs/bundle/release/app-#{flavor}-release-#{timestamp}-#{git_commit}.aab"
     end
     
     # Check if files exist and list them for debugging
-    puts "🔍 Checking for build artifacts..."
+    puts "🔍 Checking for #{flavor} #{build_type} build artifacts..."
     puts "Looking for APK: #{File.expand_path(original_apk)}"
     puts "APK exists: #{File.exist?(File.expand_path(original_apk))}"
     
