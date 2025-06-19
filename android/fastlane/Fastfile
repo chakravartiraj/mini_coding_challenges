@@ -182,10 +182,10 @@ platform :android do
     setup
     
     # Build APK with dynamic version
-    sh("cd .. && flutter build apk --debug --build-name=#{version_name} --build-number=#{version_code}")
+    sh("cd .. && flutter build apk --debug --flavor dev --build-name=#{version_name} --build-number=#{version_code}")
     
     # Build App Bundle with dynamic version
-    sh("cd .. && flutter build appbundle --debug --build-name=#{version_name} --build-number=#{version_code}")
+    sh("cd .. && flutter build appbundle --debug --flavor dev --build-name=#{version_name} --build-number=#{version_code}")
     
     # Copy artifacts with timestamp-based names
     timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug")
