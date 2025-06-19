@@ -21,7 +21,6 @@ on:
         type: string
 
 env:
-  FLUTTER_VERSION: 'latest'
   JAVA_VERSION: '17'
 
 jobs:
@@ -49,7 +48,6 @@ jobs:
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
 
@@ -146,7 +144,7 @@ jobs:
             "workflow_run": "${{ github.run_number }}",
             "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "build_type": "${{ github.event.inputs.build_type || 'debug' }}",
-            "flutter_version": "${{ env.FLUTTER_VERSION }}",
+            "flutter_version": "$(flutter --version | head -n1)",
             "java_version": "${{ env.JAVA_VERSION }}"
           }
           EOF
@@ -250,7 +248,7 @@ jobs:
           echo "| **Git Branch** | \`${{ steps.build_info.outputs.git_branch }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Git Commit** | \`${{ steps.build_info.outputs.git_commit }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Build Type** | \`${{ github.event.inputs.build_type || 'debug' }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Flutter Version** | \`${{ env.FLUTTER_VERSION }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Flutter Version** | \`$(flutter --version | head -n1 | cut -d' ' -f2)\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📱 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Debug APK**: \`app-debug.apk\`" >> $GITHUB_STEP_SUMMARY
