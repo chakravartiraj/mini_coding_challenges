@@ -26,7 +26,7 @@ class TransactionTestDataBuilder {
     title: title,
     description: description,
     amount: amount,
-    date: date ?? DateTime(2024, 1, 1),
+    date: date ?? DateTime(2024, 1),
     type: TransactionType.income,
   );
 
@@ -44,7 +44,7 @@ class TransactionTestDataBuilder {
     title: title,
     description: description,
     amount: amount,
-    date: date ?? DateTime(2024, 1, 1),
+    date: date ?? DateTime(2024, 1),
     type: TransactionType.expense,
   );
 
@@ -110,10 +110,10 @@ class TransactionTestDataBuilder {
   /// Creates transactions with edge case values for robust testing
   static List<Transaction> edgeCaseTransactions() => [
     // Zero amount
-    income(id: 1, amount: 0.0, title: 'Zero Amount'),
+    income(amount: 0, title: 'Zero Amount'),
 
     // Very large amount
-    expense(id: 2, amount: 999999.99, title: 'Large Amount'),
+    expense(amount: 999999.99, title: 'Large Amount'),
 
     // Very small amount
     income(id: 3, amount: 0.01, title: 'Small Amount'),
@@ -122,20 +122,20 @@ class TransactionTestDataBuilder {
     expense(
       id: 4,
       title: 'Very Long Transaction Title That Exceeds Normal Length',
-      amount: 100.0,
+      amount: 100,
     ),
 
     // Empty description
-    income(id: 5, description: '', amount: 50.0),
+    income(id: 5, description: '', amount: 50),
 
     // Special characters in title
-    expense(id: 6, title: 'Special!@#\$%^&*()Transaction', amount: 75.0),
+    expense(id: 6, title: 'Special!@#\$%^&*()Transaction', amount: 75),
 
     // Future date
-    income(id: 7, date: DateTime(2030, 12, 31), amount: 200.0),
+    income(id: 7, date: DateTime(2030, 12, 31), amount: 200),
 
     // Past date
-    expense(id: 8, date: DateTime(1990, 1, 1), amount: 25.0),
+    expense(id: 8, date: DateTime(1990, 1), amount: 25),
   ];
 }
 
@@ -148,11 +148,11 @@ class TestConstants {
   static const int pageSize = 20;
 
   /// Default test amounts
-  static const double defaultIncomeAmount = 100.0;
-  static const double defaultExpenseAmount = 50.0;
+  static const double defaultIncomeAmount = 100;
+  static const double defaultExpenseAmount = 50;
 
   /// Test date ranges
-  static final DateTime testStartDate = DateTime(2024, 1, 1);
+  static final DateTime testStartDate = DateTime(2024, 1);
   static final DateTime testEndDate = DateTime(2024, 12, 31);
 
   /// Error messages for testing
@@ -169,13 +169,11 @@ class TestConstants {
 /// Utility functions for test assertions and validations
 class TestUtils {
   /// Validates that a transaction has all required fields
-  static bool isValidTransaction(Transaction transaction) {
-    return transaction.id > 0 &&
+  static bool isValidTransaction(Transaction transaction) => transaction.id > 0 &&
         transaction.userId > 0 &&
         transaction.title.isNotEmpty &&
         transaction.amount >= 0 &&
         transaction.date.isValid;
-  }
 
   /// Validates that a list of transactions is properly sorted by date
   static bool isTransactionListSortedByDate(List<Transaction> transactions) {
@@ -190,12 +188,10 @@ class TestUtils {
   }
 
   /// Calculates the total balance from a list of transactions
-  static double calculateTotalBalance(List<Transaction> transactions) {
-    return transactions.fold(
+  static double calculateTotalBalance(List<Transaction> transactions) => transactions.fold(
       0.0,
       (sum, transaction) => sum + transaction.signedAmount,
     );
-  }
 
   /// Filters transactions by type
   static List<Transaction> filterByType(
@@ -221,9 +217,7 @@ class TestUtils {
   }
 
   /// Validates pagination parameters
-  static bool isValidPaginationParams(int page, int limit) {
-    return page > 0 && limit > 0 && limit <= 100;
-  }
+  static bool isValidPaginationParams(int page, int limit) => page > 0 && limit > 0 && limit <= 100;
 
   /// Creates a delay for testing async operations
   static Future<void> shortDelay([Duration? duration]) async {
@@ -231,12 +225,10 @@ class TestUtils {
   }
 
   /// Validates JSON response structure
-  static bool isValidJsonResponse(Map<String, dynamic> json) {
-    return json.containsKey('id') &&
+  static bool isValidJsonResponse(Map<String, dynamic> json) => json.containsKey('id') &&
         json.containsKey('userId') &&
         json.containsKey('title') &&
         json.containsKey('body');
-  }
 }
 
 /// Custom matchers for enhanced test assertions
@@ -246,15 +238,13 @@ class CustomMatchers {
     Transaction actual,
     Transaction expected, {
     double tolerance = 0.01,
-  }) {
-    return actual.id == expected.id &&
+  }) => actual.id == expected.id &&
         actual.userId == expected.userId &&
         actual.title == expected.title &&
         actual.description == expected.description &&
         (actual.amount - expected.amount).abs() < tolerance &&
         actual.date == expected.date &&
         actual.type == expected.type;
-  }
 
   /// Matcher for validating transaction list properties
   static bool isValidTransactionList(
@@ -291,9 +281,7 @@ class CustomMatchers {
 
 extension DateTimeTestExtensions on DateTime {
   /// Checks if a DateTime is valid (not null and within reasonable bounds)
-  bool get isValid {
-    return year >= 1900 && year <= 2100;
-  }
+  bool get isValid => year >= 1900 && year <= 2100;
 
   /// Checks if a DateTime is today
   bool get isToday {

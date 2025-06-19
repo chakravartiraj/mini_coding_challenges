@@ -139,11 +139,9 @@ class Transaction extends Equatable {
 
   // Custom toString for better debugging and logging
   @override
-  String toString() {
-    return 'Transaction(id: $id, userId: $userId, title: $title, '
+  String toString() => 'Transaction(id: $id, userId: $userId, title: $title, '
         'description: $description, amount: $amount, date: $date, '
         'type: $type)';
-  }
 }
 
 // ARCHITECTURAL BENEFITS OF THIS DESIGN:

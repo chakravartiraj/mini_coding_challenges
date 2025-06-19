@@ -1,53 +1,84 @@
-# 🚀 Quick Setup Guide - Flutter CI/CD Pipeline
+# ⚡ Quick Setup - Flutter CI/CD Pipeline
 
-## ⚡ 5-Minute Setup
+## 🚀 5-Minute Setup
 
-### 1. Prerequisites Check
+### 1. Prerequisites
 ```bash
-# Verify required tools
-flutter --version  # Should be 3.16.9+
-java -version      # Should be 17+
-ruby --version     # Should be 3.1+
-git --version      # Any recent version
+flutter --version  # 3.16.9+
+java -version      # 17+
+ruby --version     # 3.1+
 ```
 
 ### 2. Install Dependencies
 ```bash
-# Flutter dependencies
 flutter pub get
-
-# Fastlane dependencies
-cd android
-bundle install
-cd ..
+cd android && bundle install && cd ..
 ```
 
-### 3. Test the Pipeline Locally
+### 3. Test Locally (Optional)
 ```bash
-# Run pre-commit checks
+# Pre-commit validation
 ./scripts/pre-commit-quality-check.sh
 
-# Run full Fastlane pipeline
-cd android
-bundle exec fastlane --file QualityFastfile master_quality_pipeline
+# Full pipeline test
+cd android && bundle exec fastlane --file QualityFastfile master_quality_pipeline
 ```
 
-### 4. Setup Git Hook (Optional)
+### 4. Setup Pre-commit Hook (Optional)
 ```bash
-# Automatic pre-commit checks
 ln -sf ../../scripts/pre-commit-quality-check.sh .git/hooks/pre-commit
 ```
 
-### 5. Push to Trigger CI/CD
+### 5. Trigger CI/CD
 ```bash
 git add .
-git commit -m "feat: setup professional CI/CD pipeline"
+git commit -m "feat: setup CI/CD pipeline"
 git push origin main
 ```
 
-## 🎯 What Happens Next
+## 🎯 What Happens
 
-1. **GitHub Actions triggers** automatically
+**GitHub Actions Pipeline** (25-45 min):
+1. Static Analysis & Formatting (~5-10 min)
+2. Testing Suite (~15-20 min)
+3. Coverage Analysis (~5-10 min)
+4. Performance Monitoring (~10-15 min)
+5. Build Artifacts (~15-25 min)
+6. Quality Summary (~5 min)
+
+## 📊 Expected Outputs
+
+### **Local Reports** (after Fastlane run)
+```
+reports/
+├── analysis/     # Static analysis
+├── tests/        # Test results  
+├── coverage/     # HTML coverage
+├── performance/  # Build metrics
+└── build/        # Build summaries
+```
+
+### **GitHub Artifacts**
+- Analysis Reports
+- Test Reports (all types)
+- Coverage Reports (HTML)
+- Performance Reports
+- Build Artifacts (APK/AAB)
+
+## 🔧 Common Issues
+
+**Flutter not found:** Add to PATH  
+**Bundle install fails:** `gem install bundler`  
+**Java version wrong:** Install OpenJDK 17  
+**No tests found:** Tests auto-created on first run  
+
+## 📚 Next Steps
+
+- **Customize:** Edit `android/fastlane/QualityFastfile`
+- **Documentation:** See [Complete CI/CD Guide](CICD_PIPELINE_COMPLETE_GUIDE.md)
+- **Issues:** Check [troubleshooting section](CI_CD_PIPELINE_GUIDE.md#troubleshooting)
+
+**Done! Push code to see your pipeline in action!** 🚀
 2. **Static analysis** runs first (~5 min)
 3. **Tests execute** in parallel (~15 min)
 4. **Coverage analysis** generates reports (~5 min)
@@ -161,3 +192,42 @@ Your Flutter project now has:
 📖 **Full Documentation:** `docs/CI_CD_PIPELINE_GUIDE.md`
 
 Happy coding! 🚀
+
+## 🔨 Debug Build Workflow
+
+### **Quick Debug Build**
+```bash
+# Trigger debug build with dynamic versioning
+git push origin feature/my-feature
+# → Generates versioned APK & AAB artifacts automatically
+```
+
+### **Manual Debug Build**
+1. Go to **Actions** → **Debug Build with Dynamic Versioning**
+2. Click **Run workflow**
+3. Optionally add version suffix
+4. Download artifacts when complete
+
+### **Local Debug Build**
+```bash
+# Build locally with same versioning system
+./scripts/build-debug-local.sh
+
+# With custom suffix
+./scripts/build-debug-local.sh hotfix
+```
+
+📖 **Complete Guide**: [Debug Build Workflow Documentation](DEBUG_BUILD_WORKFLOW.md)
+
+## 🎯 What Happens
+
+**Debug Build Workflow** (5-15 min):
+1. Version Bump & Tagging (~2-5 min)
+2. Build APK & AAB (~5-10 min)
+3. Upload to Firebase (~3-5 min)
+4. Notify Stakeholders (~1-2 min)
+
+### Expected Outputs
+- Versioned APK and AAB files
+- Firebase distribution links
+- Notification of completion

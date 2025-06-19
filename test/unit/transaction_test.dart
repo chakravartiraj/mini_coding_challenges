@@ -10,8 +10,8 @@ void main() {
         userId: 1,
         title: 'Test Transaction',
         description: 'Test Description',
-        amount: 100.0,
-        date: DateTime(2024, 1, 1),
+        amount: 100,
+        date: DateTime(2024, 1),
         type: TransactionType.income,
       );
 
@@ -21,7 +21,7 @@ void main() {
       expect(transaction.title, 'Test Transaction');
       expect(transaction.description, 'Test Description');
       expect(transaction.amount, 100.0);
-      expect(transaction.date, DateTime(2024, 1, 1));
+      expect(transaction.date, DateTime(2024, 1));
       expect(transaction.type, TransactionType.income);
     });
 
@@ -32,8 +32,8 @@ void main() {
         userId: 1,
         title: 'Test Transaction',
         description: 'Test Description',
-        amount: 100.0,
-        date: DateTime(2024, 1, 1),
+        amount: 100,
+        date: DateTime(2024, 1),
         type: TransactionType.income,
       );
 
@@ -42,8 +42,8 @@ void main() {
         userId: 1,
         title: 'Test Transaction',
         description: 'Test Description',
-        amount: 100.0,
-        date: DateTime(2024, 1, 1),
+        amount: 100,
+        date: DateTime(2024, 1),
         type: TransactionType.income,
       );
 
@@ -59,8 +59,8 @@ void main() {
         userId: 1,
         title: 'Test Transaction 1',
         description: 'Test Description 1',
-        amount: 100.0,
-        date: DateTime(2024, 1, 1),
+        amount: 100,
+        date: DateTime(2024, 1),
         type: TransactionType.income,
       );
 
@@ -69,7 +69,7 @@ void main() {
         userId: 2,
         title: 'Test Transaction 2',
         description: 'Test Description 2',
-        amount: 200.0,
+        amount: 200,
         date: DateTime(2024, 1, 2),
         type: TransactionType.expense,
       );
@@ -85,8 +85,8 @@ void main() {
         userId: 1,
         title: 'Salary',
         description: 'Monthly salary',
-        amount: 5000.0,
-        date: DateTime(2024, 1, 1),
+        amount: 5000,
+        date: DateTime(2024, 1),
         type: TransactionType.income,
       );
 
@@ -103,7 +103,7 @@ void main() {
         userId: 1,
         title: 'Groceries',
         description: 'Weekly grocery shopping',
-        amount: 150.0,
+        amount: 150,
         date: DateTime(2024, 1, 2),
         type: TransactionType.expense,
       );
@@ -122,7 +122,7 @@ void main() {
         title: 'Test',
         description: 'Test',
         amount: 1234.56,
-        date: DateTime(2024, 1, 1),
+        date: DateTime(2024, 1),
         type: TransactionType.income,
       );
 

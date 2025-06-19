@@ -215,8 +215,8 @@ void main() {
         const page = 1;
         const limit = 20;
         final expectedTransactions = [
-          TransactionTestDataBuilder.income(id: 1),
-          TransactionTestDataBuilder.expense(id: 2),
+          TransactionTestDataBuilder.income(),
+          TransactionTestDataBuilder.expense(),
           TransactionTestDataBuilder.income(id: 3),
         ];
 
@@ -543,9 +543,9 @@ void main() {
 
         // Assert - All calls should succeed
         expect(results.length, 5);
-        results.forEach((result) {
+        for (final result in results) {
           expect(result, expectedTransactions);
-        });
+        }
 
         // Verify repository was called for each request
         verify(() => mockRepository.getTransactions(page, limit)).called(5);

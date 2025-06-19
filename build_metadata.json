@@ -1,0 +1,14 @@
+{
+  "version_name": "1.0.0-debug-eeb6e85",
+  "version_code": 06182005,
+  "build_time": "2025-06-18T14:37:50.278Z",
+  "git_branch": "main",
+  "git_commit": "eeb6e85",
+  "git_commit_full": "eeb6e85b3a8cefa481349a4fe762b51f825be9fd",
+  "build_type": "debug",
+  "build_environment": "local",
+  "build_method": "flutter_direct",
+  "flutter_version": "Flutter 3.32.1 • channel stable • https://github.com/flutter/flutter.git",
+  "platform": "Linux",
+  "architecture": "x86_64"
+}

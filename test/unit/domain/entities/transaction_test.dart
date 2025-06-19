@@ -22,7 +22,7 @@ void main() {
         expect(transaction.title, 'Test Income');
         expect(transaction.description, 'Test income description');
         expect(transaction.amount, 100.0);
-        expect(transaction.date, DateTime(2024, 1, 1));
+        expect(transaction.date, DateTime(2024, 1));
         expect(transaction.type, TransactionType.income);
       });
 
@@ -59,15 +59,15 @@ void main() {
         expect(transactions[6].date, DateTime(2030, 12, 31));
 
         // Past date
-        expect(transactions[7].date, DateTime(1990, 1, 1));
+        expect(transactions[7].date, DateTime(1990, 1));
       });
     });
 
     group('Equality & Hash Code', () {
       test('should be equal when all properties match', () {
         // Arrange
-        final transaction1 = TransactionTestDataBuilder.income(id: 1);
-        final transaction2 = TransactionTestDataBuilder.income(id: 1);
+        final transaction1 = TransactionTestDataBuilder.income();
+        final transaction2 = TransactionTestDataBuilder.income();
 
         // Act & Assert
         expect(transaction1, equals(transaction2));
@@ -76,7 +76,7 @@ void main() {
 
       test('should not be equal when properties differ', () {
         // Arrange
-        final transaction1 = TransactionTestDataBuilder.income(id: 1);
+        final transaction1 = TransactionTestDataBuilder.income();
         final transaction2 = TransactionTestDataBuilder.income(id: 2);
 
         // Act & Assert
@@ -86,8 +86,8 @@ void main() {
 
       test('should not be equal when amounts differ', () {
         // Arrange
-        final transaction1 = TransactionTestDataBuilder.income(amount: 100.0);
-        final transaction2 = TransactionTestDataBuilder.income(amount: 200.0);
+        final transaction1 = TransactionTestDataBuilder.income();
+        final transaction2 = TransactionTestDataBuilder.income(amount: 200);
 
         // Act & Assert
         expect(transaction1, isNot(equals(transaction2)));
@@ -95,7 +95,7 @@ void main() {
 
       test('should not be equal when types differ', () {
         // Arrange
-        final income = TransactionTestDataBuilder.income(id: 1);
+        final income = TransactionTestDataBuilder.income();
         final expense = TransactionTestDataBuilder.expense(id: 1);
 
         // Act & Assert
@@ -143,7 +143,7 @@ void main() {
       group('signedAmount getter', () {
         test('should return positive amount for income', () {
           // Arrange
-          final transaction = TransactionTestDataBuilder.income(amount: 100.0);
+          final transaction = TransactionTestDataBuilder.income();
 
           // Act
           final signedAmount = transaction.signedAmount;
@@ -154,7 +154,7 @@ void main() {
 
         test('should return negative amount for expense', () {
           // Arrange
-          final transaction = TransactionTestDataBuilder.expense(amount: 50.0);
+          final transaction = TransactionTestDataBuilder.expense();
 
           // Act
           final signedAmount = transaction.signedAmount;
@@ -165,8 +165,8 @@ void main() {
 
         test('should handle zero amounts correctly', () {
           // Arrange
-          final incomeZero = TransactionTestDataBuilder.income(amount: 0.0);
-          final expenseZero = TransactionTestDataBuilder.expense(amount: 0.0);
+          final incomeZero = TransactionTestDataBuilder.income(amount: 0);
+          final expenseZero = TransactionTestDataBuilder.expense(amount: 0);
 
           // Act & Assert
           expect(incomeZero.signedAmount, 0.0);
@@ -191,7 +191,7 @@ void main() {
       group('formattedAmount getter', () {
         test('should format income amount with plus sign', () {
           // Arrange
-          final transaction = TransactionTestDataBuilder.income(amount: 100.0);
+          final transaction = TransactionTestDataBuilder.income();
 
           // Act
           final formatted = transaction.formattedAmount;
@@ -202,7 +202,7 @@ void main() {
 
         test('should format expense amount with minus sign', () {
           // Arrange
-          final transaction = TransactionTestDataBuilder.expense(amount: 50.0);
+          final transaction = TransactionTestDataBuilder.expense();
 
           // Act
           final formatted = transaction.formattedAmount;
@@ -213,8 +213,8 @@ void main() {
 
         test('should format zero amounts correctly', () {
           // Arrange
-          final incomeZero = TransactionTestDataBuilder.income(amount: 0.0);
-          final expenseZero = TransactionTestDataBuilder.expense(amount: 0.0);
+          final incomeZero = TransactionTestDataBuilder.income(amount: 0);
+          final expenseZero = TransactionTestDataBuilder.expense(amount: 0);
 
           // Act & Assert
           expect(incomeZero.formattedAmount, '+\$0.00');
@@ -300,7 +300,7 @@ void main() {
         test('should handle edge case dates', () {
           // Arrange
           final oldTransaction = TransactionTestDataBuilder.income(
-            date: DateTime(1990, 1, 1),
+            date: DateTime(1990, 1),
           );
           final futureTransaction = TransactionTestDataBuilder.income(
             date: DateTime(2030, 12, 31),
@@ -317,9 +317,7 @@ void main() {
       test('should provide readable string representation', () {
         // Arrange
         final transaction = TransactionTestDataBuilder.income(
-          id: 1,
           title: 'Test Income',
-          amount: 100.0,
         );
 
         // Act
@@ -338,8 +336,7 @@ void main() {
       test('should be immutable - create new instance for modifications', () {
         // Arrange
         final original = TransactionTestDataBuilder.income(
-          id: 1,
-          amount: 100.0,
+          amount: 100,
         );
 
         // Act - Create new instance with modified amount
@@ -348,7 +345,7 @@ void main() {
           userId: original.userId,
           title: original.title,
           description: original.description,
-          amount: 200.0, // Modified amount
+          amount: 200, // Modified amount
           date: original.date,
         );
 
@@ -387,7 +384,7 @@ void main() {
 
       test('should handle negative amounts for income', () {
         // Arrange & Act
-        final transaction = TransactionTestDataBuilder.income(amount: -100.0);
+        final transaction = TransactionTestDataBuilder.income(amount: -100);
 
         // Assert
         expect(transaction.amount, -100.0);
@@ -441,10 +438,10 @@ void main() {
       test('should calculate signed amounts for balance calculations', () {
         // Arrange
         final transactions = [
-          TransactionTestDataBuilder.income(amount: 100.0),
-          TransactionTestDataBuilder.expense(amount: 30.0),
-          TransactionTestDataBuilder.income(amount: 50.0),
-          TransactionTestDataBuilder.expense(amount: 20.0),
+          TransactionTestDataBuilder.income(),
+          TransactionTestDataBuilder.expense(amount: 30),
+          TransactionTestDataBuilder.income(amount: 50),
+          TransactionTestDataBuilder.expense(amount: 20),
         ];
 
         // Act

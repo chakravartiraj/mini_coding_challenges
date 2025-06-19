@@ -8,7 +8,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.environment});
+  const MyApp({required this.environment, super.key});
 
   final String environment;
 
@@ -20,6 +20,5 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
     ),
     home: const TransactionListPage(),
-    debugShowCheckedModeBanner: true,
   );
 }

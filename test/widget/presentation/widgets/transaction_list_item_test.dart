@@ -26,7 +26,6 @@ void main() {
       ) async {
         // Arrange
         final transaction = TransactionTestDataBuilder.income(
-          id: 1,
           title: 'Freelance Payment',
           description: 'Payment from client ABC',
           amount: 1500.50,
@@ -58,7 +57,7 @@ void main() {
 
       testWidgets('should use green color for income amounts', (tester) async {
         // Arrange
-        final transaction = TransactionTestDataBuilder.income(amount: 100.0);
+        final transaction = TransactionTestDataBuilder.income();
 
         // Act
         await tester.pumpWidget(
@@ -77,7 +76,6 @@ void main() {
       ) async {
         // Arrange
         final transaction = TransactionTestDataBuilder.expense(
-          id: 2,
           title: 'Grocery Shopping',
           description: 'Weekly groceries at SuperMart',
           amount: 89.75,
@@ -109,7 +107,7 @@ void main() {
 
       testWidgets('should use red color for expense amounts', (tester) async {
         // Arrange
-        final transaction = TransactionTestDataBuilder.expense(amount: 50.0);
+        final transaction = TransactionTestDataBuilder.expense();
 
         // Act
         await tester.pumpWidget(
@@ -170,7 +168,7 @@ void main() {
 
       testWidgets('should have trailing amount', (tester) async {
         // Arrange
-        final transaction = TransactionTestDataBuilder.income(amount: 200.0);
+        final transaction = TransactionTestDataBuilder.income(amount: 200);
 
         // Act
         await tester.pumpWidget(
@@ -186,7 +184,7 @@ void main() {
     group('Edge Cases', () {
       testWidgets('should handle very long titles gracefully', (tester) async {
         // Arrange
-        final longTitle =
+        const longTitle =
             'This is a very long transaction title that might '
             'overflow and we need to ensure it displays properly';
         final transaction = TransactionTestDataBuilder.income(title: longTitle);
@@ -215,7 +213,7 @@ void main() {
 
       testWidgets('should handle zero amount', (tester) async {
         // Arrange
-        final transaction = TransactionTestDataBuilder.income(amount: 0.0);
+        final transaction = TransactionTestDataBuilder.income(amount: 0);
 
         // Act
         await tester.pumpWidget(
@@ -247,7 +245,7 @@ void main() {
         // Arrange
         final transaction = TransactionTestDataBuilder.income(
           title: 'Salary',
-          amount: 2500.0,
+          amount: 2500,
         );
 
         // Act
@@ -266,7 +264,7 @@ void main() {
         // Arrange
         final transaction = TransactionTestDataBuilder.expense(
           title: 'Gas',
-          amount: 45.0,
+          amount: 45,
         );
 
         // Act

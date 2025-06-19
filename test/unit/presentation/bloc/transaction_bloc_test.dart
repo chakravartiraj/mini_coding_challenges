@@ -750,8 +750,8 @@ void main() {
         'should maintain transaction order from use case',
         build: () {
           final orderedTransactions = [
-            TransactionTestDataBuilder.income(id: 1),
-            TransactionTestDataBuilder.expense(id: 2),
+            TransactionTestDataBuilder.income(),
+            TransactionTestDataBuilder.expense(),
             TransactionTestDataBuilder.income(id: 3),
           ];
 

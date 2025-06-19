@@ -2,6 +2,9 @@
 # This file contains the fastlane.tools configuration for Android deployments
 # Use this file to define all available lanes for Android
 
+require 'fileutils'
+require 'json'
+
 default_platform(:android)
 
 platform :android do
@@ -161,6 +164,197 @@ platform :android do
     puts "✅ Deployed to Firebase App Distribution"
   end
   
+  # =============================================================================
+  # DEBUG BUILD WITH DYNAMIC VERSIONING
+  # =============================================================================
+  
+  desc "Build debug artifacts with dynamic versioning"
+  lane :build_debug_artifacts do |options|
+    puts "🚀 Building debug artifacts with dynamic versioning..."
+    
+    # Generate dynamic version
+    version_info = generate_dynamic_version
+    version_name = version_info[:version_name]
+    version_code = version_info[:version_code]
+    
+    puts "📦 Building with version: #{version_name} (#{version_code})"
+    
+    setup
+    
+    # Build APK with dynamic version
+    sh("cd .. && flutter build apk --debug --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Build App Bundle with dynamic version
+    sh("cd .. && flutter build appbundle --debug --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Copy artifacts with timestamp-based names
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "debug")
+    
+    # Create build info file
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "debug")
+    
+    puts "✅ Debug artifacts build completed with version #{version_name}"
+    puts "📦 Artifacts available at:"
+    puts "   APK: #{timestamped_artifacts[:apk_path]}"
+    puts "   AAB: #{timestamped_artifacts[:aab_path]}"
+  end
+  
+  desc "Build release artifacts with dynamic versioning"
+  lane :build_release_artifacts do |options|
+    puts "🚀 Building release artifacts with dynamic versioning..."
+    
+    # Generate dynamic version
+    version_info = generate_dynamic_version
+    version_name = version_info[:version_name]
+    version_code = version_info[:version_code]
+    
+    puts "📦 Building with version: #{version_name} (#{version_code})"
+    
+    setup
+    
+    # Build APK with dynamic version
+    sh("cd .. && flutter build apk --release --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Build App Bundle with dynamic version
+    sh("cd .. && flutter build appbundle --release --build-name=#{version_name} --build-number=#{version_code}")
+    
+    # Copy artifacts with timestamp-based names
+    timestamped_artifacts = copy_artifacts_with_timestamp(version_name: version_name, version_code: version_code, build_type: "release")
+    
+    # Create build info file
+    create_build_info(version_name: version_name, version_code: version_code, build_type: "release")
+    
+    puts "✅ Release artifacts build completed with version #{version_name}"
+    puts "📦 Artifacts available at:"
+    puts "   APK: #{timestamped_artifacts[:apk_path]}"
+    puts "   AAB: #{timestamped_artifacts[:aab_path]}"
+  end
+
+  desc "Generate dynamic version based on timestamp and git info"
+  private_lane :generate_dynamic_version do
+    # Get current timestamp (Android-safe format: MMDDHHMM to stay under 2.1B)
+    timestamp = Time.now.strftime("%m%d%H%M")  # Month+Day+Hour+Min format
+    
+    # Get git information
+    git_branch = sh("git rev-parse --abbrev-ref HEAD", log: false).strip
+    git_commit = sh("git rev-parse --short HEAD", log: false).strip
+    
+    # Get build number from environment or generate from timestamp
+    build_number = ENV["GITHUB_RUN_NUMBER"] || timestamp
+    
+    # Ensure build number is under Android limit (2.1 billion)
+    if build_number.to_i > 2100000000
+      # Fallback to a simple incrementing number based on minutes since epoch
+      build_number = (Time.now.to_i / 60) % 2100000000
+    end
+    
+    # Generate version name: major.minor.patch-branch-commit
+    major_minor_patch = "1.0.0"
+    if git_branch == "main" || git_branch == "master"
+      version_name = "#{major_minor_patch}-debug-#{git_commit}"
+    else
+      # Sanitize branch name for version
+      clean_branch = git_branch.gsub(/[^a-zA-Z0-9]/, "")
+      version_name = "#{major_minor_patch}-#{clean_branch}-#{git_commit}"
+    end
+    
+    puts "🏷️  Generated version: #{version_name} (#{build_number})"
+    
+    {
+      version_name: version_name,
+      version_code: build_number.to_i
+    }
+  end
+  
+  desc "Create build information file"
+  private_lane :create_build_info do |options|
+    version_name = options[:version_name]
+    version_code = options[:version_code]
+    build_type = options[:build_type] || "debug"
+    
+    build_info = {
+      version_name: version_name,
+      version_code: version_code,
+      build_time: Time.now.utc.iso8601,
+      git_branch: sh("git rev-parse --abbrev-ref HEAD", log: false).strip,
+      git_commit: sh("git rev-parse HEAD", log: false).strip,
+      git_commit_short: sh("git rev-parse --short HEAD", log: false).strip,
+      build_type: build_type
+    }
+    
+    # Write build info to JSON file
+    File.write("../build_info.json", JSON.pretty_generate(build_info))
+    puts "📄 Build info written to build_info.json"
+  end
+
+  desc "Copy artifacts with timestamp-based names"
+  private_lane :copy_artifacts_with_timestamp do |options|
+    version_name = options[:version_name]
+    version_code = options[:version_code]
+    build_type = options[:build_type] || "debug"
+    
+    # Generate timestamp for filenames
+    timestamp = Time.now.strftime("%Y%m%d_%H%M%S")
+    git_commit = sh("git rev-parse --short HEAD", log: false).strip
+    
+    # Ensure target directories exist based on build type
+    sh("mkdir -p ../build/app/outputs/apk")
+    if build_type == "debug"
+      sh("mkdir -p ../build/app/outputs/bundle/debug")
+    else
+      sh("mkdir -p ../build/app/outputs/bundle/release")
+    end
+    
+    # Define original and new paths based on build type
+    if build_type == "debug"
+      original_apk = "../build/app/outputs/flutter-apk/app-debug.apk"
+      original_aab = "../build/app/outputs/bundle/debug/app-debug.aab"
+      alternative_apk = "../build/app/outputs/apk/debug/app-debug.apk"
+      new_apk = "../build/app/outputs/apk/app-debug-#{timestamp}-#{git_commit}.apk"
+      new_aab = "../build/app/outputs/bundle/debug/app-debug-#{timestamp}-#{git_commit}.aab"
+    else
+      original_apk = "../build/app/outputs/flutter-apk/app-release.apk"
+      original_aab = "../build/app/outputs/bundle/release/app-release.aab"
+      alternative_apk = "../build/app/outputs/apk/release/app-release.apk"
+      new_apk = "../build/app/outputs/apk/app-release-#{timestamp}-#{git_commit}.apk"
+      new_aab = "../build/app/outputs/bundle/release/app-release-#{timestamp}-#{git_commit}.aab"
+    end
+    
+    # Copy files with new names
+    original_apk_full = File.expand_path(original_apk)
+    alternative_apk_full = File.expand_path(alternative_apk)
+    original_aab_full = File.expand_path(original_aab)
+    new_apk_full = File.expand_path(new_apk)
+    new_aab_full = File.expand_path(new_aab)
+    
+    # Copy APK from available location to correct timestamped location
+    if File.exist?(original_apk_full)
+      FileUtils.cp(original_apk_full, new_apk_full)
+      puts "📦 APK copied from flutter-apk to: #{new_apk}"
+    elsif File.exist?(alternative_apk_full)
+      FileUtils.cp(alternative_apk_full, new_apk_full)
+      puts "📦 APK copied from apk/debug to: #{new_apk}"
+    else
+      UI.error("❌ APK not found in expected locations: #{original_apk_full} or #{alternative_apk_full}")
+    end
+    
+    if File.exist?(original_aab_full)
+      FileUtils.cp(original_aab_full, new_aab_full)
+      puts "📦 AAB copied to: #{new_aab}"
+    else
+      UI.error("❌ Original AAB not found: #{original_aab_full}")
+    end
+    
+    {
+      version_name: version_name,
+      version_code: version_code,
+      apk_path: new_apk,
+      aab_path: new_aab,
+      original_apk_path: original_apk,
+      original_aab_path: original_aab
+    }
+  end
+
   # =============================================================================
   # UTILITY LANES
   # =============================================================================

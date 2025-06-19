@@ -30,11 +30,13 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    // Enable BuildConfig feature for custom build configuration fields
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.mini_coding_challenges"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -43,17 +45,73 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = keystoreProperties["storeFile"]?.let { File(it.toString()) }
-            storePassword = keystoreProperties["storePassword"] as String?
+            // Support for CI/CD injected signing
+            if (project.hasProperty("android.injected.signing.store.file")) {
+                storeFile = file(project.property("android.injected.signing.store.file") as String)
+                storePassword = project.property("android.injected.signing.store.password") as String
+                keyAlias = project.property("android.injected.signing.key.alias") as String
+                keyPassword = project.property("android.injected.signing.key.password") as String
+            } else if (keystorePropertiesFile.exists()) {
+                // Use local keystore properties
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeFile = keystoreProperties["storeFile"]?.let { File(it.toString()) }
+                storePassword = keystoreProperties["storePassword"] as String?
+            } else if (file("keystore.jks").exists()) {
+                // Fallback to local keystore.jks
+                storeFile = file("keystore.jks")
+            }
+        }
+    }
+
+    // Product flavors for different environments
+    flavorDimensions += "environment"
+    
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Mini Challenges (Dev)")
+            buildConfigField("String", "API_BASE_URL", "\"https://dev-api.example.com\"")
+            buildConfigField("String", "ENVIRONMENT", "\"dev\"")
+        }
+        
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            resValue("string", "app_name", "Mini Challenges (Staging)")
+            buildConfigField("String", "API_BASE_URL", "\"https://staging-api.example.com\"")
+            buildConfigField("String", "ENVIRONMENT", "\"staging\"")
+        }
+        
+        create("production") {
+            dimension = "environment"
+            resValue("string", "app_name", "Mini Coding Challenges")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.example.com\"")
+            buildConfigField("String", "ENVIRONMENT", "\"production\"")
         }
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        
         release {
-            // Use the release signing config
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
+            
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

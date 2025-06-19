@@ -133,15 +133,13 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: StatefulBuilder(
-              builder: (context, setState) {
-                return Scaffold(
+              builder: (context, setState) => Scaffold(
                   body: const Center(child: Text('Stateful Widget')),
                   floatingActionButton: FloatingActionButton(
                     onPressed: () => setState(() {}),
                     child: const Icon(Icons.refresh),
                   ),
-                );
-              },
+                ),
             ),
           ),
         );

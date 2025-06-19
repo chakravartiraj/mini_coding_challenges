@@ -1,0 +1,277 @@
+name: 🚀 Debug Build with Dynamic Versioning
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: false
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      version_suffix:
+        description: 'Version suffix (optional)'
+        required: false
+        type: string
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+  JAVA_VERSION: '17'
+
+jobs:
+  debug-build:
+    name: 🔨 Build Debug Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      # =============================================================================
+      # ENVIRONMENT SETUP
+      # =============================================================================
+      
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better versioning
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 💎 Setup Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: android
+
+      # =============================================================================
+      # DEPENDENCY MANAGEMENT
+      # =============================================================================
+
+      - name: 📦 Get Flutter Dependencies
+        run: flutter pub get
+
+      - name: 🔍 Verify Flutter Setup
+        run: |
+          flutter doctor -v
+          flutter --version
+
+      # =============================================================================
+      # BUILD INFORMATION
+      # =============================================================================
+
+      - name: 🏷️ Generate Build Information
+        id: build_info
+        run: |
+          # Generate timestamp-based version (Android-safe format)
+          TIMESTAMP=$(date +"%y%m%d%H%M")  # YY format to stay under 2.1B limit
+          GIT_COMMIT=$(git rev-parse --short HEAD)
+          GIT_BRANCH=${GITHUB_REF#refs/heads/}
+          BUILD_NUMBER=${GITHUB_RUN_NUMBER:-$TIMESTAMP}
+          
+          # Ensure build number is under Android limit (2.1 billion)
+          if [ "$BUILD_NUMBER" -gt 2100000000 ]; then
+            BUILD_NUMBER=$TIMESTAMP
+          fi
+          
+          # Generate version name
+          MAJOR_MINOR_PATCH="1.0.0"
+          if [[ "$GIT_BRANCH" == "main" || "$GIT_BRANCH" == "master" ]]; then
+            VERSION_NAME="${MAJOR_MINOR_PATCH}-debug-${GIT_COMMIT}"
+          else
+            CLEAN_BRANCH=$(echo "$GIT_BRANCH" | sed 's/[^a-zA-Z0-9]//g')
+            VERSION_NAME="${MAJOR_MINOR_PATCH}-${CLEAN_BRANCH}-${GIT_COMMIT}"
+          fi
+          
+          # Add custom suffix if provided
+          if [[ -n "${{ github.event.inputs.version_suffix }}" ]]; then
+            VERSION_NAME="${VERSION_NAME}-${{ github.event.inputs.version_suffix }}"
+          fi
+          
+          echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "version_code=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "git_commit=${GIT_COMMIT}" >> $GITHUB_OUTPUT
+          echo "git_branch=${GIT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          
+          echo "🏷️ Version: ${VERSION_NAME} (${BUILD_NUMBER})"
+          echo "📋 Branch: ${GIT_BRANCH}"
+          echo "📋 Commit: ${GIT_COMMIT}"
+
+      # =============================================================================
+      # BUILD ARTIFACTS
+      # =============================================================================
+
+      - name: 🔨 Build Debug Artifacts with Fastlane
+        run: |
+          cd android
+          bundle exec fastlane build_debug_artifacts
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+
+      - name: 📄 Generate Build Metadata
+        run: |
+          cat > build_metadata.json << EOF
+          {
+            "version_name": "${{ steps.build_info.outputs.version_name }}",
+            "version_code": "${{ steps.build_info.outputs.version_code }}",
+            "build_time": "$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")",
+            "git_branch": "${{ steps.build_info.outputs.git_branch }}",
+            "git_commit": "${{ steps.build_info.outputs.git_commit }}",
+            "git_commit_full": "${{ github.sha }}",
+            "workflow_run": "${{ github.run_number }}",
+            "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "build_type": "${{ github.event.inputs.build_type || 'debug' }}",
+            "flutter_version": "${{ env.FLUTTER_VERSION }}",
+            "java_version": "${{ env.JAVA_VERSION }}"
+          }
+          EOF
+
+      # =============================================================================
+      # ARTIFACT VERIFICATION
+      # =============================================================================
+
+      - name: 🔍 Verify Build Artifacts
+        run: |
+          echo "🔍 Verifying build artifacts..."
+          
+          # Find timestamped artifacts in correct locations
+          APK_FILES=(build/app/outputs/apk/app-debug-*.apk)
+          AAB_FILES=(build/app/outputs/bundle/debug/app-debug-*.aab)
+          
+          # Check APK in correct location
+          if [ -f "${APK_FILES[0]}" ]; then
+            APK_SIZE=$(du -h "${APK_FILES[0]}" | cut -f1)
+            echo "✅ Timestamped APK found: $(basename "${APK_FILES[0]}") (${APK_SIZE})"
+            echo "timestamped_apk=${APK_FILES[0]}" >> $GITHUB_ENV
+          elif [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+            APK_SIZE=$(du -h build/app/outputs/flutter-apk/app-debug.apk | cut -f1)
+            echo "✅ Standard APK found: ${APK_SIZE}"
+            echo "timestamped_apk=build/app/outputs/flutter-apk/app-debug.apk" >> $GITHUB_ENV
+          elif [ -f "build/app/outputs/apk/debug/app-debug.apk" ]; then
+            APK_SIZE=$(du -h build/app/outputs/apk/debug/app-debug.apk | cut -f1)
+            echo "✅ Standard APK found: ${APK_SIZE}"
+            echo "timestamped_apk=build/app/outputs/apk/debug/app-debug.apk" >> $GITHUB_ENV
+          else
+            echo "❌ APK not found!"
+            exit 1
+          fi
+          
+          # Check AAB
+          if [ -f "${AAB_FILES[0]}" ]; then
+            AAB_SIZE=$(du -h "${AAB_FILES[0]}" | cut -f1)
+            echo "✅ Timestamped AAB found: $(basename "${AAB_FILES[0]}") (${AAB_SIZE})"
+            echo "timestamped_aab=${AAB_FILES[0]}" >> $GITHUB_ENV
+          elif [ -f "build/app/outputs/bundle/debug/app-debug.aab" ]; then
+            AAB_SIZE=$(du -h build/app/outputs/bundle/debug/app-debug.aab | cut -f1)
+            echo "✅ Standard AAB found: ${AAB_SIZE}"
+            echo "timestamped_aab=build/app/outputs/bundle/debug/app-debug.aab" >> $GITHUB_ENV
+          else
+            echo "❌ AAB not found!"
+            exit 1
+          fi
+          
+          echo "🎉 All artifacts verified successfully!"
+
+      # =============================================================================
+      # ARTIFACT UPLOAD
+      # =============================================================================
+
+      - name: 📤 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ steps.build_info.outputs.version_name }}
+          path: |
+            build/app/outputs/apk/app-debug*.apk
+            build/app/outputs/flutter-apk/app-debug*.apk
+            build_metadata.json
+            build_info.json
+          retention-days: 30
+          compression-level: 6
+
+      - name: 📤 Upload Debug App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-aab-${{ steps.build_info.outputs.version_name }}
+          path: |
+            build/app/outputs/bundle/debug/app-debug*.aab
+            build_metadata.json
+            build_info.json
+          retention-days: 30
+          compression-level: 6
+
+      - name: 📤 Upload Build Information
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info-${{ steps.build_info.outputs.version_name }}
+          path: |
+            build_metadata.json
+            build_info.json
+          retention-days: 90
+
+      # =============================================================================
+      # BUILD SUMMARY
+      # =============================================================================
+
+      - name: 📋 Build Summary
+        if: always()
+        run: |
+          echo "## 🚀 Debug Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version Name** | \`${{ steps.build_info.outputs.version_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version Code** | \`${{ steps.build_info.outputs.version_code }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git Branch** | \`${{ steps.build_info.outputs.git_branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Git Commit** | \`${{ steps.build_info.outputs.git_commit }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Type** | \`${{ github.event.inputs.build_type || 'debug' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Flutter Version** | \`${{ env.FLUTTER_VERSION }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Debug APK**: \`app-debug.apk\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Debug App Bundle**: \`app-debug.aab\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Build Metadata**: \`build_metadata.json\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Workflow Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Number**: #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow**: [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+  # =============================================================================
+  # NOTIFICATION (Optional)
+  # =============================================================================
+  notify:
+    name: 📢 Notify Build Completion
+    runs-on: ubuntu-latest
+    needs: debug-build
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: 📢 Notify Success
+        if: needs.debug-build.result == 'success'
+        run: |
+          echo "✅ Debug build completed successfully!"
+          echo "🎉 Artifacts are ready for download"
+          
+      - name: 📢 Notify Failure
+        if: needs.debug-build.result == 'failure'
+        run: |
+          echo "❌ Debug build failed!"
+          echo "🔍 Check the logs for details"

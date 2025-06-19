@@ -8,7 +8,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.environment});
+  const MyApp({required this.environment, super.key});
 
   final String environment;
 
