@@ -5,87 +5,87 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="00: default_platform" time="0.000836617">
+      <testcase classname="fastlane.lanes" name="00: default_platform" time="0.000381056">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="01: Switch to android generate_dynamic_version lane" time="0.000354006">
+      <testcase classname="fastlane.lanes" name="01: Switch to android generate_dynamic_version lane" time="0.00029307">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="02: shell command" time="0.003416052">
+      <testcase classname="fastlane.lanes" name="02: shell command" time="0.002829023">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="03: shell command" time="0.00365496">
+      <testcase classname="fastlane.lanes" name="03: shell command" time="0.002494713">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="04: Switch to android setup lane" time="0.000290954">
+      <testcase classname="fastlane.lanes" name="04: Switch to android setup lane" time="0.000262816">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="05: cd .. &amp;&amp; flutter pub get" time="6.570153193">
+      <testcase classname="fastlane.lanes" name="05: cd .. &amp;&amp; flutter pub get" time="6.836160817">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="06: cd .. &amp;&amp; flutter clean" time="1.213338454">
+      <testcase classname="fastlane.lanes" name="06: cd .. &amp;&amp; flutter clean" time="1.451337899">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="07: cd .. &amp;&amp; flutter build apk --debug --flavor dev --target=lib/main_dev.dart --build-name=1.0.0-debug-d12616c --build-number=6192133" time="54.480640008">
+      <testcase classname="fastlane.lanes" name="07: cd .. &amp;&amp; flutter build apk --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-b34137f --build-number=6200009" time="75.094933649">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="08: cd .. &amp;&amp; flutter build appbundle --debug --flavor dev --target=lib/main_dev.dart --build-name=1.0.0-debug-d12616c --build-number=6192133" time="84.763733728">
+      <testcase classname="fastlane.lanes" name="08: cd .. &amp;&amp; flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-b34137f --build-number=6200009" time="14.765846428">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="09: Switch to android copy_artifacts_with_timestamp lane" time="0.00041238">
+      <testcase classname="fastlane.lanes" name="09: Switch to android copy_artifacts_with_timestamp lane" time="0.000209205">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="10: shell command" time="0.002660657">
+      <testcase classname="fastlane.lanes" name="10: shell command" time="0.002371004">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="11: mkdir -p ../build/app/outputs/apk" time="0.002878745">
+      <testcase classname="fastlane.lanes" name="11: mkdir -p ../build/app/outputs/apk" time="0.001979826">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="12: mkdir -p ../build/app/outputs/bundle/debug" time="0.002928192">
+      <testcase classname="fastlane.lanes" name="12: mkdir -p ../build/app/outputs/bundle/release" time="0.002251275">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="13: Switch to android create_build_info lane" time="0.000311073">
+      <testcase classname="fastlane.lanes" name="13: Switch to android create_build_info lane" time="0.000886373">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="14: shell command" time="0.003479796">
+      <testcase classname="fastlane.lanes" name="14: shell command" time="0.004742778">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="15: shell command" time="0.00350522">
+      <testcase classname="fastlane.lanes" name="15: shell command" time="0.004748045">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="16: shell command" time="0.014225739">
+      <testcase classname="fastlane.lanes" name="16: shell command" time="0.018245399">
         
       </testcase>
     

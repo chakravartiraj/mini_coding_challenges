@@ -103,6 +103,38 @@ Build debug artifacts with dynamic versioning
 
 Build release artifacts with dynamic versioning
 
+### android build_staging_debug_artifacts
+
+```sh
+[bundle exec] fastlane android build_staging_debug_artifacts
+```
+
+Build staging debug artifacts with dynamic versioning
+
+### android build_staging_release_artifacts
+
+```sh
+[bundle exec] fastlane android build_staging_release_artifacts
+```
+
+Build staging release artifacts with dynamic versioning
+
+### android build_production_debug_artifacts
+
+```sh
+[bundle exec] fastlane android build_production_debug_artifacts
+```
+
+Build production debug artifacts with dynamic versioning
+
+### android build_production_release_artifacts
+
+```sh
+[bundle exec] fastlane android build_production_release_artifacts
+```
+
+Build production release artifacts with dynamic versioning
+
 ### android validate
 
 ```sh

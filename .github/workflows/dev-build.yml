@@ -149,7 +149,6 @@ jobs:
             "workflow_run": "${{ github.run_number }}",
             "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "build_type": "${{ github.event.inputs.build_type || 'debug' }}",
-            "flavor": "dev",
             "flutter_version": "$(flutter --version | head -n1)",
             "java_version": "${{ env.JAVA_VERSION }}"
           }

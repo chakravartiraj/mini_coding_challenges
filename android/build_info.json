@@ -1,9 +1,10 @@
 {
-  "version_name": "1.0.0-debug-d12616c",
-  "version_code": 6192133,
-  "build_time": "2025-06-19T16:06:24Z",
+  "version_name": "1.0.0-debug-b34137f",
+  "version_code": 6200009,
+  "build_time": "2025-06-19T18:40:47Z",
   "git_branch": "main",
-  "git_commit": "d12616c9434a5fbf0b3e783ae2f4a49b8348a0ba",
-  "git_commit_short": "d12616c",
-  "build_type": "debug"
+  "git_commit": "b34137fab65e63c61be87304571cceec16f4717d",
+  "git_commit_short": "b34137f",
+  "build_type": "release",
+  "flavor": "production"
 }

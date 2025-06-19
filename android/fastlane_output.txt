@@ -1,0 +1,221 @@
+/var/lib/gems/3.3.0/gems/highline-2.0.3/lib/highline/import.rb:10: warning: abbrev was loaded from the standard library, but will no longer be part of the default gems starting from Ruby 3.4.0.
+You can add abbrev to your Gemfile or gemspec to silence this warning.
++-----------------------------------------------------------+
+|                       [32mUsed plugins[0m                        |
++------------------------+---------+------------------------+
+| Plugin                 | Version | Action                 |
++------------------------+---------+------------------------+
+| fastlane-plugin-fireb  | 0.10.1  | firebase_app_distribu  |
+| ase_app_distribution   |         | tion,                  |
+|                        |         | firebase_app_distribu  |
+|                        |         | tion_add_testers,      |
+|                        |         | firebase_app_distribu  |
+|                        |         | tion_create_group,     |
+|                        |         | firebase_app_distribu  |
+|                        |         | tion_delete_group,     |
+|                        |         | firebase_app_distribu  |
+|                        |         | tion_get_latest_relea  |
+|                        |         | se,                    |
+|                        |         | firebase_app_distribu  |
+|                        |         | tion_get_udids,        |
+|                        |         | firebase_app_distribu  |
+|                        |         | tion_remove_testers    |
++------------------------+---------+------------------------+
+
+[00:04:16]: [32m------------------------------[0m
+[00:04:16]: [32m--- Step: default_platform ---[0m
+[00:04:16]: [32m------------------------------[0m
+[00:04:16]: [32mDriving the lane 'android build_production_release_artifacts' 🚀[0m
+[00:04:16]: 🚀 Building production release artifacts with dynamic versioning...
+[00:04:16]: [32m-------------------------------------------------------------[0m
+[00:04:16]: [32m--- Step: Switch to android generate_dynamic_version lane ---[0m
+[00:04:16]: [32m-------------------------------------------------------------[0m
+[00:04:16]: Cruising over to lane 'android generate_dynamic_version' 🚖
+[00:04:16]: [32m---------------------------[0m
+[00:04:16]: [32m--- Step: shell command ---[0m
+[00:04:16]: [32m---------------------------[0m
+[00:04:16]: [32m---------------------------[0m
+[00:04:16]: [32m--- Step: shell command ---[0m
+[00:04:16]: [32m---------------------------[0m
+[00:04:16]: 🏷️  Generated version: 1.0.0-debug-b34137f (06200004)
+[00:04:16]: Cruising back to lane 'android build_production_release_artifacts' 🚘
+[00:04:16]: 📦 Building production release with version: 1.0.0-debug-b34137f (6200004)
+[00:04:16]: [32m------------------------------------------[0m
+[00:04:16]: [32m--- Step: Switch to android setup lane ---[0m
+[00:04:16]: [32m------------------------------------------[0m
+[00:04:16]: Cruising over to lane 'android setup' 🚖
+[00:04:16]: 🔧 Setting up Android environment...
+[00:04:16]: [32m--------------------------------------[0m
+[00:04:16]: [32m--- Step: cd .. && flutter pub get ---[0m
+[00:04:16]: [32m--------------------------------------[0m
+[00:04:16]: [36m$ cd .. && flutter pub get[0m
+[00:04:17]: ▸ [35mResolving dependencies in `/home/io/StudioProjects/mini_coding_challenges`...[0m
+[00:04:18]: ▸ [35mDownloading packages...[0m
+[00:04:18]: ▸ [35mbloc 8.1.4 (9.0.0 available)[0m
+[00:04:18]: ▸ [35mbloc_test 9.1.7 (10.0.0 available)[0m
+[00:04:18]: ▸ [35mbuild 2.5.0 (2.5.2 available)[0m
+[00:04:18]: ▸ [35mbuild_resolvers 2.5.0 (2.5.2 available)[0m
+[00:04:18]: ▸ [35mbuild_runner 2.5.0 (2.5.2 available)[0m
+[00:04:18]: ▸ [35mbuild_runner_core 9.0.0 (9.1.0 available)[0m
+[00:04:18]: ▸ [35mflutter_bloc 8.1.6 (9.1.1 available)[0m
+[00:04:18]: ▸ [35mflutter_lints 5.0.0 (6.0.0 available)[0m
+[00:04:18]: ▸ [35mfreezed 2.5.8 (3.0.6 available)[0m
+[00:04:18]: ▸ [35mfreezed_annotation 2.4.4 (3.0.0 available)[0m
+[00:04:18]: ▸ [35mintl 0.19.0 (0.20.2 available)[0m
+[00:04:18]: ▸ [35mleak_tracker 10.0.9 (11.0.1 available)[0m
+[00:04:18]: ▸ [35mleak_tracker_flutter_testing 3.0.9 (3.0.10 available)[0m
+[00:04:18]: ▸ [35mleak_tracker_testing 3.0.1 (3.0.2 available)[0m
+[00:04:18]: ▸ [35mlints 5.1.1 (6.0.0 available)[0m
+[00:04:18]: ▸ [35mmaterial_color_utilities 0.11.1 (0.13.0 available)[0m
+[00:04:18]: ▸ [35mmeta 1.16.0 (1.17.0 available)[0m
+[00:04:18]: ▸ [35mtest 1.25.15 (1.26.2 available)[0m
+[00:04:18]: ▸ [35mtest_api 0.7.4 (0.7.6 available)[0m
+[00:04:18]: ▸ [35mtest_core 0.6.8 (0.6.11 available)[0m
+[00:04:18]: ▸ [35mvector_math 2.1.4 (2.2.0 available)[0m
+[00:04:18]: ▸ [35mvm_service 15.0.0 (15.0.2 available)[0m
+[00:04:18]: ▸ [35mGot dependencies in `/home/io/StudioProjects/mini_coding_challenges`![0m
+[00:04:18]: ▸ [35m22 packages have newer versions incompatible with dependency constraints.[0m
+[00:04:18]: ▸ [35mTry `flutter pub outdated` for more information.[0m
+[00:04:22]: [32m------------------------------------[0m
+[00:04:22]: [32m--- Step: cd .. && flutter clean ---[0m
+[00:04:22]: [32m------------------------------------[0m
+[00:04:22]: [36m$ cd .. && flutter clean[0m
+[00:04:22]: ▸ [35mChanging current working directory to: /home/io/StudioProjects/mini_coding_challenges[0m
+[00:04:23]: ▸ [35mDeleting .dart_tool...                                               2ms[0m
+[00:04:23]: ▸ [35mDeleting ephemeral...                                                3ms[0m
+[00:04:23]: ▸ [35mDeleting Generated.xcconfig...                                       2ms[0m
+[00:04:23]: ▸ [35mDeleting flutter_export_environment.sh...                            0ms[0m
+[00:04:23]: ✅ Android environment setup complete
+[00:04:23]: Cruising back to lane 'android build_production_release_artifacts' 🚘
+[00:04:23]: [32m--------------------------------------------------------------------[0m
+[00:04:23]: [32mStep: cd .. && flutter build apk --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-b34137f --build-number=6200004[0m
+[00:04:23]: [32m--------------------------------------------------------------------[0m
+[00:04:23]: [36m$ cd .. && flutter build apk --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-b34137f --build-number=6200004[0m
+[00:04:24]: ▸ [35mChanging current working directory to: /home/io/StudioProjects/mini_coding_challenges[0m
+[00:04:24]: ▸ [35mResolving dependencies...[0m
+[00:04:25]: ▸ [35mDownloading packages...[0m
+[00:04:25]: ▸ [35mbloc 8.1.4 (9.0.0 available)[0m
+[00:04:25]: ▸ [35mbloc_test 9.1.7 (10.0.0 available)[0m
+[00:04:25]: ▸ [35mbuild 2.5.0 (2.5.2 available)[0m
+[00:04:25]: ▸ [35mbuild_resolvers 2.5.0 (2.5.2 available)[0m
+[00:04:25]: ▸ [35mbuild_runner 2.5.0 (2.5.2 available)[0m
+[00:04:25]: ▸ [35mbuild_runner_core 9.0.0 (9.1.0 available)[0m
+[00:04:25]: ▸ [35mflutter_bloc 8.1.6 (9.1.1 available)[0m
+[00:04:25]: ▸ [35mflutter_lints 5.0.0 (6.0.0 available)[0m
+[00:04:25]: ▸ [35mfreezed 2.5.8 (3.0.6 available)[0m
+[00:04:25]: ▸ [35mfreezed_annotation 2.4.4 (3.0.0 available)[0m
+[00:04:25]: ▸ [35mintl 0.19.0 (0.20.2 available)[0m
+[00:04:25]: ▸ [35mleak_tracker 10.0.9 (11.0.1 available)[0m
+[00:04:25]: ▸ [35mleak_tracker_flutter_testing 3.0.9 (3.0.10 available)[0m
+[00:04:25]: ▸ [35mleak_tracker_testing 3.0.1 (3.0.2 available)[0m
+[00:04:25]: ▸ [35mlints 5.1.1 (6.0.0 available)[0m
+[00:04:25]: ▸ [35mmaterial_color_utilities 0.11.1 (0.13.0 available)[0m
+[00:04:25]: ▸ [35mmeta 1.16.0 (1.17.0 available)[0m
+[00:04:25]: ▸ [35mtest 1.25.15 (1.26.2 available)[0m
+[00:04:25]: ▸ [35mtest_api 0.7.4 (0.7.6 available)[0m
+[00:04:25]: ▸ [35mtest_core 0.6.8 (0.6.11 available)[0m
+[00:04:25]: ▸ [35mvector_math 2.1.4 (2.2.0 available)[0m
+[00:04:25]: ▸ [35mvm_service 15.0.0 (15.0.2 available)[0m
+[00:04:25]: ▸ [35mGot dependencies![0m
+[00:04:25]: ▸ [35m22 packages have newer versions incompatible with dependency constraints.[0m
+[00:04:25]: ▸ [35mTry `flutter pub outdated` for more information.[0m
+[00:04:51]: ▸ [35mRunning Gradle task 'assembleProductionRelease'...[0m
+[00:04:51]: ▸ [35mFont asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 1660 bytes (99.9% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.[0m
+[00:05:40]: ▸ [35mRunning Gradle task 'assembleProductionRelease'...                 71.3s[0m
+[00:05:41]: ▸ [35m✓ Built build/app/outputs/flutter-apk/app-production-release.apk (20.7MB)[0m
+[00:05:41]: [32m--------------------------------------------------------------------[0m
+[00:05:41]: [32mStep: cd .. && flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-b34137f --build-number=6200004[0m
+[00:05:41]: [32m--------------------------------------------------------------------[0m
+[00:05:41]: [36m$ cd .. && flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-b34137f --build-number=6200004[0m
+[00:05:42]: ▸ [35mChanging current working directory to: /home/io/StudioProjects/mini_coding_challenges[0m
+[00:05:54]: ▸ [35mRunning Gradle task 'bundleProductionRelease'...                   10.0s[0m
+[00:05:56]: ▸ [35m✓ Built build/app/outputs/bundle/productionRelease/app-production-release.aab (39.7MB)[0m
+[00:05:56]: [32m------------------------------------------------------------------[0m
+[00:05:56]: [32m--- Step: Switch to android copy_artifacts_with_timestamp lane ---[0m
+[00:05:56]: [32m------------------------------------------------------------------[0m
+[00:05:56]: Cruising over to lane 'android copy_artifacts_with_timestamp' 🚖
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m--- Step: shell command ---[0m
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m-----------------------------------------------[0m
+[00:05:56]: [32m--- Step: mkdir -p ../build/app/outputs/apk ---[0m
+[00:05:56]: [32m-----------------------------------------------[0m
+[00:05:56]: [36m$ mkdir -p ../build/app/outputs/apk[0m
+[00:05:56]: [32m----------------------------------------------------------[0m
+[00:05:56]: [32m--- Step: mkdir -p ../build/app/outputs/bundle/release ---[0m
+[00:05:56]: [32m----------------------------------------------------------[0m
+[00:05:56]: [36m$ mkdir -p ../build/app/outputs/bundle/release[0m
+[00:05:56]: 🔍 Checking for production release build artifacts...
+[00:05:56]: Looking for APK: /home/io/StudioProjects/mini_coding_challenges/android/build/app/outputs/flutter-apk/app-production-release.apk
+[00:05:56]: APK exists: false
+[00:05:56]: Looking for AAB: /home/io/StudioProjects/mini_coding_challenges/android/build/app/outputs/bundle/productionRelease/app-production-release.aab
+[00:05:56]: AAB exists: false
+[00:05:56]: Alternative APK: /home/io/StudioProjects/mini_coding_challenges/android/build/app/outputs/apk/production/release/app-production-release.apk
+[00:05:56]: Alternative APK exists: false
+[00:05:56]: 📁 Available APK files:
+[00:05:56]: � Available AAB files:
+[00:05:56]: Cruising back to lane 'android build_production_release_artifacts' 🚘
+[00:05:56]: [32m------------------------------------------------------[0m
+[00:05:56]: [32m--- Step: Switch to android create_build_info lane ---[0m
+[00:05:56]: [32m------------------------------------------------------[0m
+[00:05:56]: Cruising over to lane 'android create_build_info' 🚖
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m--- Step: shell command ---[0m
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m--- Step: shell command ---[0m
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: [32m--- Step: shell command ---[0m
+[00:05:56]: [32m---------------------------[0m
+[00:05:56]: 📄 Build info written to build_info.json
+[00:05:56]: Cruising back to lane 'android build_production_release_artifacts' 🚘
+[00:05:56]: ✅ Production release artifacts build completed with version 1.0.0-debug-b34137f
+[00:05:56]: 📦 Artifacts available at:
+[00:05:56]:    APK: ../build/app/outputs/flutter-apk/app-production-release.apk
+[00:05:56]:    AAB: ../build/app/outputs/bundle/productionRelease/app-production-release.aab
+
++---------------------------------------------+
+|              [32mfastlane summary[0m               |
++------+------------------------+-------------+
+| Step | Action                 | Time (in s) |
++------+------------------------+-------------+
+| 1    | default_platform       | 0           |
+| 2    | Switch to android      | 0           |
+|      | generate_dynamic_vers  |             |
+|      | ion lane               |             |
+| 3    | shell command          | 0           |
+| 4    | shell command          | 0           |
+| 5    | Switch to android      | 0           |
+|      | setup lane             |             |
+| 6    | cd .. && flutter pub   | 5           |
+|      | get                    |             |
+| 7    | cd .. && flutter       | 1           |
+|      | clean                  |             |
+| 8    | cd .. && flutter       | 78          |
+|      | build apk --release    |             |
+|      | --flavor production    |             |
+|      | --ta                   |             |
+| 9    | cd .. && flutter       | 14          |
+|      | build appbundle        |             |
+|      | --release --flavor     |             |
+|      | productio              |             |
+| 10   | Switch to android      | 0           |
+|      | copy_artifacts_with_t  |             |
+|      | imestamp lane          |             |
+| 11   | shell command          | 0           |
+| 12   | mkdir -p               | 0           |
+|      | ../build/app/outputs/  |             |
+|      | apk                    |             |
+| 13   | mkdir -p               | 0           |
+|      | ../build/app/outputs/  |             |
+|      | bundle/release         |             |
+| 14   | Switch to android      | 0           |
+|      | create_build_info      |             |
+|      | lane                   |             |
+| 15   | shell command          | 0           |
+| 16   | shell command          | 0           |
+| 17   | shell command          | 0           |
++------+------------------------+-------------+
+
+[00:05:56]: [32mfastlane.tools finished successfully 🎉[0m
