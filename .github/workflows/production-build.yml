@@ -80,6 +80,63 @@ jobs:
           flutter --version
 
       # =============================================================================
+      # ANDROID SIGNING SETUP
+      # =============================================================================
+
+      - name: 🔐 Setup Android Signing
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ env.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ env.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ env.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ env.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "🔐 Setting up Android signing configuration..."
+          
+          # Decode the keystore from base64
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release-keystore.jks
+          
+          # Verify keystore was created
+          if [ ! -f "android/app/release-keystore.jks" ]; then
+            echo "❌ Failed to create keystore file"
+            exit 1
+          fi
+          
+          echo "✅ Keystore file created successfully"
+          
+          # Create local.properties file with signing configuration
+          cat > android/local.properties << EOF
+          sdk.dir=$ANDROID_HOME
+          storeFile=release-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+          
+          echo "✅ Android signing configuration completed"
+          
+          # Verify local.properties was created
+          if [ -f "android/local.properties" ]; then
+            echo "✅ local.properties file created successfully"
+            echo "📋 Signing configuration:"
+            echo "   - Keystore: release-keystore.jks"
+            echo "   - Key alias: $ANDROID_KEY_ALIAS"
+            echo "   - Store password: [HIDDEN]"
+            echo "   - Key password: [HIDDEN]"
+          else
+            echo "❌ Failed to create local.properties file"
+            exit 1
+          fi
+          
+      - name: 🔐 Android Signing Status
+        run: |
+          if [ -f "android/app/release-keystore.jks" ]; then
+            echo "✅ Android keystore is configured for signed builds"
+          else
+            echo "⚠️  No Android keystore configured - builds will be unsigned"
+          fi
+
+      # =============================================================================
       # BUILD INFORMATION
       # =============================================================================
 
