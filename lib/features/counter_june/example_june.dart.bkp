@@ -1,0 +1,96 @@
+// Single-file June demo (copy-paste into https://dartpad.dev – Flutter channel)
+// NOTE: DartPad does NOT support code-generation, so we use the
+//       hand-written boiler-plate approach for Store.
+// For local projects, prefer using the June package.
+// june: ^1.0.0+1
+
+import 'package:flutter/material.dart';
+import 'package:june/june.dart';
+
+/// 1. Run pub add june  (or add to pubspec.yaml)
+/// 2. Run the app
+void main() => runApp(const JuneApp());
+
+/// --- Application ----------------------------------------------------------
+class JuneApp extends StatelessWidget {
+  const JuneApp({super.key});
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'June DemoController',
+    home: Scaffold(
+      appBar: AppBar(title: const Text('June DemoController')),
+      body: const Center(child: DemoView()),
+      floatingActionButton: const _FABs(),
+    ),
+  );
+}
+
+/// --- State Controller -----------------------------------------------------
+class DemoController extends JuneState {
+  int counter = 0;
+  Color color = Colors.blue;
+
+  void increment() {
+    counter++;
+    setState(); // <- triggers rebuild
+  }
+
+  void randomizeColor() {
+    color = Color.fromARGB(
+      255,
+      100 + (counter * 37) % 155,
+      50 + (counter * 67) % 155,
+      200 + (counter * 13) % 55,
+    );
+    setState();
+  }
+}
+
+/// --- UI Widget -------------------------------------------------------------
+class DemoView extends StatelessWidget {
+  const DemoView({super.key});
+
+  @override
+  Widget build(BuildContext context) => JuneBuilder(
+    DemoController.new,
+    builder: (DemoController ctrl) => Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text('Counter (managed by DemoController)'),
+        const SizedBox(height: 12),
+        Text(
+          '${ctrl.counter}',
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: ctrl.color,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// --- Floating-Action Buttons ----------------------------------------------
+class _FABs extends StatelessWidget {
+  const _FABs();
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      FloatingActionButton(
+        heroTag: 'inc',
+        onPressed: () => June.getState(DemoController.new).increment(),
+        child: const Icon(Icons.add),
+      ),
+      const SizedBox(height: 12),
+      FloatingActionButton(
+        heroTag: 'color',
+        onPressed: () => June.getState(DemoController.new).randomizeColor(),
+        child: const Icon(Icons.color_lens),
+      ),
+    ],
+  );
+}
