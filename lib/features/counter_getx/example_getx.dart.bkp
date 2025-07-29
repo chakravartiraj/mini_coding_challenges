@@ -1,5 +1,6 @@
-// Paste this entire file into https://dartpad.dev (or any Flutter editor)
-// and hit "Run". No extra files needed.
+// Paste this into https://dartpad.dev (Flutter channel) and hit "Run".
+// Uses get, so add the dependency first if running locally:
+//   get: ^4.7.2
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

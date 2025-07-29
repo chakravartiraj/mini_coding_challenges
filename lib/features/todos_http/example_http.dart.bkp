@@ -1,3 +1,7 @@
+// Paste this into https://dartpad.dev (Flutter channel) and hit "Run".
+// Uses http, so add the dependency first if running locally:
+//   http: ^1.4.0
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';

@@ -1,3 +1,7 @@
+// Paste this into https://dartpad.dev (Flutter channel) and hit "Run".
+// Uses provider, so add the dependency first if running locally:
+//   provider: ^6.1.5
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
