@@ -1,0 +1,92 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+/// The data model for our counter, extending ChangeNotifier to notify listeners.
+class DemoController extends ChangeNotifier {
+
+  /// Private constructor to ensure a single instance if needed,
+  /// but for provider, it's typically just instantiated directly.
+  DemoController();
+  
+  int _counter = 0;
+
+  /// Getter for the counter value.
+  int get counter => _counter;
+
+  /// Increments the counter and notifies all listeners.
+  void increment() {
+    _counter++;
+    notifyListeners();
+  }
+}
+
+/// The main application widget.
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // We use ChangeNotifierProvider to "put" (make available) our DemoController.
+    // The create callback provides an instance of DemoController.
+    // The builder parameter ensures the correct context is used for its child.
+    return ChangeNotifierProvider<DemoController>(
+      create: (BuildContext context) => DemoController(),
+      builder: (BuildContext context, Widget? child) {
+        return MaterialApp(
+          title: 'Controller Example',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+          ),
+          home: const CounterScreen(),
+        );
+      },
+    );
+  }
+}
+
+/// The screen that displays and interacts with the counter.
+class CounterScreen extends StatelessWidget {
+  const CounterScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // To "find" and reactively listen to changes in DemoController's counter:
+    // context.watch<DemoController>() rebuilds this widget whenever
+    // notifyListeners() is called in DemoController.
+    final DemoController demoController = context.watch<DemoController>();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Counter Controller'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text(
+              'You have pushed the button this many times:',
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              '${demoController.counter}',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        // To "find" and call a method on DemoController without rebuilding
+        // the current widget: context.read<DemoController>() gets the instance
+        // but does not cause a rebuild when the controller changes.
+        onPressed: () => context.read<DemoController>().increment(),
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+void main() {
+  runApp(const MyApp());
+}
