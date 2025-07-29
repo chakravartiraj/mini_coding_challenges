@@ -1,0 +1,82 @@
+// Single-file Redux demo – paste into https://dartpad.dev (Flutter channel)
+// Uses: 
+//  flutter_redux: ^0.10.0 (already available in DartPad)
+//  redux: ^5.0.0
+// -------------------------------------------------------------
+
+// ignore_for_file: lines_longer_than_80_chars
+
+import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:redux/redux.dart';
+
+/// --- ACTIONS -----------------------------------------------------
+class IncrementAction {}
+class ResetAction      {}
+
+/// --- STATE -------------------------------------------------------
+class DemoState {
+  const DemoState(this.count);
+  final int count;
+
+  DemoState copyWith({int? count}) => DemoState(count ?? this.count);
+}
+
+/// --- REDUCER -----------------------------------------------------
+DemoState reducer(DemoState state, dynamic action) {
+  if (action is IncrementAction) return state.copyWith(count: state.count + 1);
+  if (action is ResetAction)      return const DemoState(0);
+  return state;
+}
+
+/// --- VIEW --------------------------------------------------------
+void main() {
+  final store = Store<DemoState>(
+    reducer,
+    initialState: const DemoState(0),
+  );
+
+  runApp(
+    StoreProvider(
+      store: store,
+      child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: DemoPage(),
+      ),
+    ),
+  );
+}
+
+class DemoPage extends StatelessWidget {
+  const DemoPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+      appBar: AppBar(title: const Text('Redux DemoController')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            StoreConnector<DemoState, int>(
+              converter: (store) => store.state.count,
+              builder: (context, count) => Text(
+                'Count: $count',
+                style: const TextStyle(fontSize: 28),
+              ),
+            ),
+            const SizedBox(height: 16),
+            StoreConnector<DemoState, VoidCallback>(
+              converter: (store) => () => store.dispatch(IncrementAction()),
+              builder: (_, callback) =>
+                  ElevatedButton(onPressed: callback, child: const Text('+')),
+            ),
+            StoreConnector<DemoState, VoidCallback>(
+              converter: (store) => () => store.dispatch(ResetAction()),
+              builder: (_, callback) =>
+                  ElevatedButton(onPressed: callback, child: const Text('Reset'),),
+            ),
+          ],
+        ),
+      ),
+    );
+}
