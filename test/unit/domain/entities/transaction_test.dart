@@ -6,7 +6,7 @@
 // industry standards.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
 import '../../../helpers/test_data_builders.dart';
 
 void main() {

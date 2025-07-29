@@ -5,7 +5,7 @@
 // for the Mini Coding Challenges project. It follows industry best practices
 // for test data management and object creation.
 
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
 
 /// Test data builder for Transaction entities
 ///

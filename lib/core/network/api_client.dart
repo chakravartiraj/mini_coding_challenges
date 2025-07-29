@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:mini_coding_challenges/features/transactions/data/models/transaction_response.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/data/models/transaction_response.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'api_client.g.dart';

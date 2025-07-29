@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mini_coding_challenges/core/di/injection.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/pages/transaction_list_page.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/pages/transaction_list_page.dart';
 
 void main() {
   configureDependencies();

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
 
 class TransactionListItem extends StatelessWidget {
   const TransactionListItem({required this.transaction, super.key, this.onTap});

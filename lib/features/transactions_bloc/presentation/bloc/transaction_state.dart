@@ -12,7 +12,7 @@
 //       with clear state transitions and type-safe pattern matching.
 
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
 
 // Generated file for Freezed union types
 part 'transaction_state.freezed.dart';

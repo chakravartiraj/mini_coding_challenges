@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:mini_coding_challenges/core/di/injection.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_bloc.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_event.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_state.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/widgets/error_widget.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/widgets/loading_indicator.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/widgets/transaction_list_item.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_bloc.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_event.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_state.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/widgets/error_widget.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/widgets/loading_indicator.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/widgets/transaction_list_item.dart';
 
 class TransactionListPage extends StatefulWidget {
   const TransactionListPage({super.key});

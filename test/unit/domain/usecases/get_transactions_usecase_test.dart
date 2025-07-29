@@ -5,9 +5,9 @@
 // validation, error handling, and repository interaction work correctly.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/repositories/transaction_repository.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/usecases/get_transactions_usecase.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/repositories/transaction_repository.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/usecases/get_transactions_usecase.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_data_builders.dart';

@@ -13,7 +13,7 @@
 // HOW:  Using abstract class to define method signatures that data layer
 //       implements.
 
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
 
 // REPOSITORY INTERFACE
 // ===================

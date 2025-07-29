@@ -11,8 +11,8 @@
 // HOW:  Simple class that depends on repository interface and implements
 //       the specific business logic for pagination.
 
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/repositories/transaction_repository.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/repositories/transaction_repository.dart';
 
 // GET TRANSACTIONS USE CASE
 // =========================

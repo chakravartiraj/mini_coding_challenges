@@ -7,10 +7,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_bloc.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_event.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_state.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/pages/transaction_list_page.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_bloc.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_event.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_state.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/pages/transaction_list_page.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_data_builders.dart';

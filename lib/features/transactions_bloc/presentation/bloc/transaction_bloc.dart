@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/usecases/get_transactions_usecase.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_event.dart';
-import 'package:mini_coding_challenges/features/transactions/presentation/bloc/transaction_state.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/usecases/get_transactions_usecase.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_event.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/presentation/bloc/transaction_state.dart';
 
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   TransactionBloc(this._getTransactionsUseCase)

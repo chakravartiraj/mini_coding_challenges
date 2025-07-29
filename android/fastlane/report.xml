@@ -5,7 +5,87 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000370899">
+      <testcase classname="fastlane.lanes" name="00: default_platform" time="0.000918509">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="01: Switch to android generate_dynamic_version lane" time="0.000930644">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="02: shell command" time="0.010814745">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="03: shell command" time="0.010738595">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="04: Switch to android setup lane" time="0.00092537">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="05: cd .. &amp;&amp; flutter pub get" time="14.679859798">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="06: cd .. &amp;&amp; flutter clean" time="4.197036742">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="07: cd .. &amp;&amp; flutter build apk --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-d696612 --build-number=7291226" time="392.577956189">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="08: cd .. &amp;&amp; flutter build appbundle --release --flavor production --target=lib/main_production.dart --build-name=1.0.0-debug-d696612 --build-number=7291226" time="42.857634374">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="09: Switch to android copy_artifacts_with_timestamp lane" time="0.000887389">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="10: shell command" time="0.009472127">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="11: mkdir -p ../build/app/outputs/apk" time="0.009258864">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="12: mkdir -p ../build/app/outputs/bundle/release" time="0.011067056">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="13: Switch to android create_build_info lane" time="0.000951293">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="14: shell command" time="0.010783991">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="15: shell command" time="0.009721812">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="16: shell command" time="0.033942541">
         
       </testcase>
     

@@ -15,7 +15,7 @@
 //       into domain entities.
 
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mini_coding_challenges/features/transactions/domain/entities/transaction.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/domain/entities/transaction.dart';
 
 // Generated files for Freezed JSON serialization
 part 'transaction_response.freezed.dart';

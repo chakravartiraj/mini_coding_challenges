@@ -1,0 +1,144 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: FutureBuilder(
+          future: fetchTodos(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center();
+            }
+
+            if (snapshot.hasError) {
+              return Text(
+                "${snapshot.error}",
+                style: TextStyle(color: Colors.black),
+              );
+            }
+            return ListView.builder(
+              itemCount: todos.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext dialogContext) {
+                        return AlertDialog(
+                          // To display the title it is optional
+                          title: Text('${todos[index].title}'),
+                          // Message which will be pop up on the screen
+                          content: Text('${jsonEncode(todos[index])}'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('CANCEL'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('DONE'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: todos[index].completed,
+                        onChanged: (_) {},
+                      ),
+
+                      Text(
+                        "${todos[index].title}",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+List<Todo> todos = [];
+
+Future<List<Todo>> fetchTodos() async {
+  todos = [];
+  var baseUrl = 'jsonplaceholder.typicode.com';
+  var endpoint = '/todos';
+  var requestUri = Uri.https(baseUrl, endpoint);
+  // var response = '[{ "userId": 1, "id": 1, "title": "delectus aut autem", "completed": true }, { "userId": 1, "id": 2, "title": "quis ut nam facilis et officia qui", "completed": false }]';
+
+  // Await the http get response, then decode the json-formatted response.
+  var response = await http.get(requestUri);
+  try {
+    // if (response.statusCode == 200) {
+    //var jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+    //var itemCount = jsonResponse['totalItems'];
+    todos = todoFromJson(response.body);
+    print('Number of todos from response: ${todos.length}.');
+    // } else {
+    // print('Request failed with status: ${response.statusCode}.');
+    // }
+  } catch (e, s) {
+    print('Exception: $e | $s.');
+  }
+
+  return todos;
+}
+
+List<Todo> todoFromJson(String str) =>
+    List<Todo>.from(jsonDecode(str).map((x) => Todo.fromJson(x)));
+
+String todoToJson(List<Todo> data) =>
+    jsonEncode(List<dynamic>.from(data.map((x) => x.toJson())));
+
+class Todo {
+  int userId;
+  int id;
+  String title;
+  bool completed;
+
+  Todo({
+    required this.userId,
+    required this.id,
+    required this.title,
+    required this.completed,
+  });
+
+  factory Todo.fromJson(Map<String, dynamic> json) => Todo(
+    userId: json["userId"],
+    id: json["id"],
+    title: json["title"],
+    completed: json["completed"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "userId": userId,
+    "id": id,
+    "title": title,
+    "completed": completed,
+  };
+}

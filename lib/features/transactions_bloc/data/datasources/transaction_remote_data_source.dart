@@ -1,5 +1,5 @@
 import 'package:mini_coding_challenges/core/network/api_client.dart';
-import 'package:mini_coding_challenges/features/transactions/data/models/transaction_response.dart';
+import 'package:mini_coding_challenges/features/transactions_bloc/data/models/transaction_response.dart';
 
 abstract class TransactionRemoteDataSource {
   Future<List<TransactionModel>> getTransactions(int page, int limit);
