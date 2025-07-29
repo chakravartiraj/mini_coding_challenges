@@ -1,0 +1,119 @@
+// Single-file MobX demo (copy-paste into https://dartpad.dev – Flutter channel)
+// NOTE: DartPad does NOT support code-generation, so we use the
+//       hand-written boiler-plate approach for Store.
+// For local projects, prefer mobx_codegen + build_runner.
+//  flutter_mobx: ^2.3.0
+//  mobx: ^2.5.0
+// ignore_for_file: lines_longer_than_80_chars
+
+import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:mobx/mobx.dart';
+
+// part 'main.g.dart'; // <-- ignored in DartPad; we implement manually.
+
+/// --- STORE (hand-written version) -----------------------------------------
+class DemoController = _DemoController with _$DemoController;
+
+abstract class _DemoController with Store {
+  @observable
+  int count = 0;
+
+  @action
+  void increment() => count++;
+
+  @action
+  void reset() => count = 0;
+}
+
+/// --- GENERATED MIXIN (what mobx_codegen would create) ----------------------
+mixin _$DemoController on _DemoController {
+  late final _$countAtom = Atom(name: '_DemoController.count');
+
+  @override
+  int get count {
+    _$countAtom.reportRead();
+    return super.count;
+  }
+
+  @override
+  set count(int value) {
+    _$countAtom.reportWrite(value, super.count, () {
+      super.count = value;
+    });
+  }
+
+  ActionController get _$_DemoControllerActionController => ActionController(name: '_DemoController');
+
+  @override
+  void increment() {
+    final $actionInfo = _$_DemoControllerActionController.startAction();
+    try {
+      return super.increment();
+    } finally {
+      _$_DemoControllerActionController.endAction($actionInfo);
+    }
+  }
+
+  @override
+  void reset() {
+    final $actionInfo = _$_DemoControllerActionController.startAction();
+    try {
+      return super.reset();
+    } finally {
+      _$_DemoControllerActionController.endAction($actionInfo);
+    }
+  }
+}
+
+/// --- VIEW ------------------------------------------------------------------
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: DemoPage(controller: DemoController()),
+    );
+  }
+}
+
+class DemoPage extends StatelessWidget {
+  final DemoController controller;
+
+  const DemoPage({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('MobX DemoController')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Observer(
+              builder: (_) => Text(
+                'Count: ${controller.count}',
+                style: const TextStyle(fontSize: 28),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: controller.increment,
+              child: const Text('+'),
+            ),
+            ElevatedButton(
+              onPressed: controller.reset,
+              child: const Text('Reset'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
